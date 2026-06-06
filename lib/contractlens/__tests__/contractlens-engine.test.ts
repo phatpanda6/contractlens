@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inferSchema } from "../infer-schema";
-import { compareSchemas } from "../compare-schemas";
-import { formatDiff } from "../format-diff";
+import { inferSchema, compareSchemas, formatDiff } from "..";
 
 describe("ContractLens core engine", () => {
   it("infers, compares, and formats API response drift", () => {

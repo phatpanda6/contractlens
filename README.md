@@ -6,6 +6,34 @@ The goal is simple: capture the current shape of an API response as a baseline c
 
 > Deterministic code detects the API changes. AI explains the impact.
 
+## Why ContractLens?
+
+Frontend developers often depend on API responses they do not fully control. A small backend response change, such as removing a field or changing a number into a string, can silently break UI rendering, sorting, formatting, or calculations.
+
+ContractLens focuses on one narrow problem: detecting response-shape drift quickly from real API responses.
+
+The MVP is intentionally lightweight:
+
+- provide an endpoint
+- capture the current response shape as a baseline
+- run the endpoint again later
+- detect missing fields, new fields, and type changes
+- explain what changed in readable language
+
+## How This Differs From Postman
+
+Postman is a full API platform for designing, testing, documenting, monitoring, and governing APIs.
+
+ContractLens is not trying to replace Postman. It is intentionally narrower: a lightweight response-shape drift detector for frontend and full-stack developers who want a quick sanity check without manually writing schemas or setting up a full API testing workflow.
+
+The key product difference is automatic baseline capture from a live response. ContractLens focuses on:
+
+- response-shape drift
+- frontend-breaking changes
+- deterministic TypeScript comparison logic
+- readable impact explanations
+- future AI explanations built on top of detected diffs
+
 ## Current Status
 
 This project is currently in Phase 1: the core schema engine.
@@ -133,7 +161,7 @@ real API response
   -> readable messages
 ```
 
-Individual unit tests verify each function in isolation. The next test milestone is an integration-style test that verifies the full engine flow from real response data to formatted diff messages.
+Unit tests verify each function in isolation, and an integration test verifies the full engine flow from real response data to formatted diff messages.
 
 ## Change Classification
 
