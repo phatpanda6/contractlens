@@ -91,19 +91,53 @@ export default function Home() {
           </ul>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">Baseline response</h2>
-            <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
-              {JSON.stringify(baselineResponse, null, 2)}
-            </pre>
+        <section className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-xl font-semibold">API responses</h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Raw response examples used for the demo comparison.
+            </p>
           </div>
 
-          <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">Latest response</h2>
-            <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
-              {JSON.stringify(latestResponse, null, 2)}
-            </pre>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-semibold">Baseline response</h3>
+              <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
+                {JSON.stringify(baselineResponse, null, 2)}
+              </pre>
+            </div>
+
+            <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-semibold">Latest response</h3>
+              <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
+                {JSON.stringify(latestResponse, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-xl font-semibold">Inferred schemas</h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Simplified schema shapes generated from each response.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-semibold">Baseline schema</h3>
+              <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
+                {JSON.stringify(baselineSchema, null, 2)}
+              </pre>
+            </div>
+
+            <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-semibold">Latest schema</h3>
+              <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
+                {JSON.stringify(latestSchema, null, 2)}
+              </pre>
+            </div>
           </div>
         </section>
       </div>
