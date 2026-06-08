@@ -36,7 +36,7 @@ The key product difference is automatic baseline capture from a live response. C
 
 ## Current Status
 
-This project is currently in Phase 1: the core schema engine.
+This project has completed the first core-engine milestone and is now in Phase 2: a simple UI using fake demo data.
 
 Implemented so far:
 
@@ -44,10 +44,10 @@ Implemented so far:
 - `compareSchemas()` compares baseline and latest schemas.
 - `formatDiff()` turns structured diffs into readable messages.
 - Vitest unit tests cover the implemented core engine behavior.
+- The homepage shows a fake demo contract check using the core engine.
 
 Not implemented yet:
 
-- Web dashboard
 - Demo API routes
 - Database persistence
 - Live endpoint checks
