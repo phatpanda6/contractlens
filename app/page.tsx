@@ -1,22 +1,14 @@
 import { compareSchemas, formatDiff, inferSchema } from "@/lib/contractlens";
+import { demoProductV1, demoProductV2 } from "@/lib/contractlens/demo-data";
 
 export default function Home() {
   const endpoint = {
-    method: "GET",
-    path: "/api/demo/products",
+    baseline: "GET /api/demo/products/v1",
+    latest: "GET /api/demo/products/v2",
   };
 
-  const baselineResponse = {
-    id: "p_123",
-    title: "Nike Hoodie",
-    price: 89.99,
-  };
-
-  const latestResponse = {
-    id: "p_123",
-    name: "Nike Hoodie",
-    price: "89.99",
-  };
+  const baselineResponse = demoProductV1;
+  const latestResponse = demoProductV2;
 
   const baselineSchema = inferSchema(baselineResponse);
   const latestSchema = inferSchema(latestResponse);
@@ -48,10 +40,11 @@ export default function Home() {
 
         <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-stone-500">Endpoint</p>
-            <p className="mt-3 font-mono text-sm text-stone-900">
-              {endpoint.method} {endpoint.path}
-            </p>
+            <p className="text-sm font-medium text-stone-500">Demo endpoints</p>
+            <div className="mt-3 space-y-2 font-mono text-sm text-stone-900">
+              <p>{endpoint.baseline}</p>
+              <p>{endpoint.latest}</p>
+            </div>
           </div>
 
           <div className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">

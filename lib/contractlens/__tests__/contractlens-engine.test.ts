@@ -1,19 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { inferSchema, compareSchemas, formatDiff } from "..";
+import { demoProductV1, demoProductV2 } from "../demo-data";
 
 describe("ContractLens core engine", () => {
   it("infers, compares, and formats API response drift", () => {
-    const baselineResponse = {
-      id: "p_123",
-      title: "Nike Hoodie",
-      price: 89.99,
-    };
+    const baselineResponse = demoProductV1;
 
-    const latestResponse = {
-      id: "p_123",
-      name: "Nike Hoodie",
-      price: "89.99",
-    };
+    const latestResponse = demoProductV2;
 
     const baselineSchema = inferSchema(baselineResponse);
     const latestSchema = inferSchema(latestResponse);
