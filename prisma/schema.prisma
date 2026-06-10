@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Project {
+  id        String     @id @default(cuid())
+  name      String
+  createdAt DateTime   @default(now())
+  endpoints Endpoint[]
+}
+
+model Endpoint {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id])
+  name            String
+  method          String
+  url             String
+  headers         Json?
+  baselineSchema  Json?
+  baselineExample Json?
+  createdAt       DateTime  @default(now())
+  testRuns        TestRun[]
+}
+
+model TestRun {
+  id             String   @id @default(cuid())
+  endpointId     String
+  endpoint       Endpoint @relation(fields: [endpointId], references: [id])
+  status         String
+  responseBody   Json?
+  detectedSchema Json?
+  diff           Json?
+  aiExplanation  String?
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+}
