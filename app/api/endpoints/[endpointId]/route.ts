@@ -4,14 +4,27 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ endpointId: string }> },
 ) {
-  const params = await context.params;
-  const endpointId = params.endpointId;
+  const { endpointId } = await context.params;
   try {
     const endpoint = await prisma.endpoint.findUnique({
       where: {
         id: endpointId,
       },
+      select: {
+        id: true,
+        name: true,
+        method: true,
+        url: true,
+        baselineSchema: true,
+        baselineExample: true,
+        createdAt: true,
+      },
     });
+
+    if (!endpoint) {
+      return Response.json({ error: "Endpoint not found" }, { status: 404 });
+    }
+
     return Response.json({ endpoint });
   } catch (error) {
     console.error("Failed to fetch endpoint", error);
@@ -21,4 +34,3 @@ export async function GET(
     );
   }
 }
- 
