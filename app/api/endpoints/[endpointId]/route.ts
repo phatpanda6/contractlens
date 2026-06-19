@@ -18,6 +18,18 @@ export async function GET(
         baselineSchema: true,
         baselineExample: true,
         createdAt: true,
+        testRuns: {
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+            errorMessage: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 5,
+        },
       },
     });
 
