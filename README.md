@@ -36,21 +36,28 @@ The key product difference is automatic baseline capture from a live response. C
 
 ## Current Status
 
-This project has completed the first core-engine milestone and is now in Phase 2: a simple UI using fake demo data.
+ContractLens is in active development. The repository contains the first version
+of the core engine, demo API routes, a Prisma schema and seed data, read APIs for
+projects and endpoints, and an initial endpoint-run route.
 
 Implemented so far:
 
 - `inferSchema()` converts real JSON-like values into simplified schema shapes.
-- `compareSchemas()` compares baseline and latest schemas.
+- `compareSchemas()` detects direct object-field additions, removals, and primitive type changes.
 - `formatDiff()` turns structured diffs into readable messages.
-- Vitest unit tests cover the implemented core engine behavior.
+- Vitest tests cover the implemented core engine behavior, including an end-to-end fixture test.
 - The homepage shows a fake demo contract check using the core engine.
+- `/api/demo/products/v1` and `/api/demo/products/v2` provide predictable response drift.
+- Prisma models and a seed script define a demo project, endpoint, baseline schema, and baseline example.
+- Read routes expose projects and endpoint details; the initial run route can fetch a configured endpoint response.
 
-Not implemented yet:
+Not complete yet:
 
-- Demo API routes
-- Database persistence
-- Live endpoint checks
+- Recursive nested and array schema comparison.
+- A complete baseline -> run -> compare -> PASS/FAIL -> persisted test-history workflow.
+- Safe public endpoint-fetching controls and useful fetch failure states.
+- A database-backed UI; the homepage still uses hard-coded demo data.
+- CI, deployment, and browser E2E coverage.
 - AI explanations
 - CLI
 
@@ -188,8 +195,9 @@ This keeps correctness in code and uses AI for communication.
 
 - Array schemas are currently inferred from the first item only.
 - Heterogeneous arrays are not currently represented.
-- Nested object comparison is not fully implemented yet.
-- Non-2xx responses and invalid JSON handling will be added when live endpoint checks are implemented.
+- Nested object, array, and container-type comparison are not fully implemented yet.
+- The endpoint-run route currently fetches and returns JSON; it does not yet create a baseline, calculate a result, or save a `TestRun`.
+- Non-2xx responses, invalid JSON, timeouts, response-size limits, and safe public endpoint-fetching policy are not implemented yet.
 
 ## Tech Stack
 
@@ -199,11 +207,10 @@ This keeps correctness in code and uses AI for communication.
 - Tailwind CSS
 - Vitest
 - ESLint
+- Prisma and PostgreSQL schema
 
 Planned later:
 
-- Prisma
-- PostgreSQL
 - Vercel deployment
 - Vercel AI SDK or another structured AI integration
 
@@ -241,13 +248,11 @@ npm run lint
 
 ## Roadmap
 
-1. Finish the core schema engine.
-2. Add integration tests for the full engine flow.
-3. Build a simple UI using fake data.
-4. Add demo API routes for predictable contract drift.
-5. Add database persistence for projects, endpoints, and test runs.
-6. Add a run-test backend route.
-7. Connect the UI to the backend.
-8. Add AI explanations for failed contract checks.
-9. Add CI and deployment.
-10. Consider a CLI after the web MVP is working.
+1. Finish recursive schema comparison and its test coverage.
+2. Complete and persist the baseline -> run -> compare -> history workflow.
+3. Add safe endpoint fetching, typed failure states, and route integration tests.
+4. Connect the workflow to the UI and replace hard-coded demo data.
+5. Add CI, browser E2E coverage, deployment, and minimal structured logs.
+6. Publish a public demo, architecture notes, trade-offs, and limitations.
+7. Consider a minimal CLI with exit code `1` on breaking changes.
+8. Add AI explanations only after deterministic detection is complete.
