@@ -68,4 +68,29 @@ describe("compareSchemas", () => {
     );
     expect(result).toEqual([]);
   });
+
+  it("returns the full path when a nested field is missing", () => {
+    const result = compareSchemas(
+      {
+        user: {
+          profile: {
+            name: "string",
+          },
+        },
+      },
+      {
+        user: {
+          profile: {},
+        },
+      },
+    );
+
+    expect(result).toEqual([
+      {
+        type: "MISSING_FIELD",
+        path: "user.profile.name",
+        severity: "breaking",
+      },
+    ]);
+  });
 });

@@ -10,6 +10,7 @@ function isObjectSchema(
 export function compareSchemas(
   expected: JsonSchemaShape,
   actual: JsonSchemaShape,
+  currentPath: string = "",
 ): SchemaDiff[] {
   const diffs: SchemaDiff[] = [];
 
@@ -18,7 +19,7 @@ export function compareSchemas(
     if (expected !== actual) {
       diffs.push({
         type: "TYPE_CHANGED",
-        path: "",
+        path: currentPath,
         severity: "breaking",
         from: expected,
         to: actual,
@@ -31,26 +32,17 @@ export function compareSchemas(
   if (isObjectSchema(expected) && isObjectSchema(actual)) {
     // First pass: detect removed fields and primitive type changes.
     for (const key in expected) {
+      const childPath = currentPath ? `${currentPath}.${key}` : key;
       if (!(key in actual)) {
         diffs.push({
           type: "MISSING_FIELD",
-          path: key,
+          path: childPath,
           severity: "breaking",
         });
       } else {
-        if (
-          typeof actual[key] === "string" &&
-          typeof expected[key] === "string" &&
-          actual[key] !== expected[key]
-        ) {
-          diffs.push({
-            type: "TYPE_CHANGED",
-            path: key,
-            severity: "breaking",
-            from: expected[key],
-            to: actual[key],
-          });
-        }
+        diffs.push(
+          ...compareSchemas(expected[key], actual[key], childPath),
+        );
       }
     }
 
