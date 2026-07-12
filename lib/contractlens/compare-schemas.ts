@@ -40,18 +40,17 @@ export function compareSchemas(
           severity: "breaking",
         });
       } else {
-        diffs.push(
-          ...compareSchemas(expected[key], actual[key], childPath),
-        );
+        diffs.push(...compareSchemas(expected[key], actual[key], childPath));
       }
     }
 
     // Second pass: detect fields added by the latest response.
     for (const key in actual) {
+      const childPath = currentPath ? `${currentPath}.${key}` : key;
       if (!(key in expected)) {
         diffs.push({
           type: "NEW_FIELD",
-          path: key,
+          path: childPath,
           severity: "info",
         });
       }

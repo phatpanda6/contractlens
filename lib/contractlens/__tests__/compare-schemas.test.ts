@@ -93,4 +93,29 @@ describe("compareSchemas", () => {
       },
     ]);
   });
+
+  it("returns the full path when a nested field is added", () => {
+    const result = compareSchemas(
+      {
+        user: {
+          profile: {},
+        },
+      },
+      {
+        user: {
+          profile: {
+            active: "boolean",
+          },
+        },
+      },
+    );
+
+    expect(result).toEqual([
+      {
+        type: "NEW_FIELD",
+        path: "user.profile.active",
+        severity: "info",
+      },
+    ]);
+  });
 });
