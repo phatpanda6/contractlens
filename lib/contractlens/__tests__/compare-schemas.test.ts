@@ -12,7 +12,7 @@ describe("compareSchemas", () => {
     expect(result).toEqual([
       {
         type: "TYPE_CHANGED",
-        path: "",
+        path: "$",
         severity: "breaking",
         from: "number",
         to: "string",
@@ -115,6 +115,25 @@ describe("compareSchemas", () => {
         type: "NEW_FIELD",
         path: "user.profile.active",
         severity: "info",
+      },
+    ]);
+  });
+
+  it("returns a root type change when an object becomes an array", () => {
+    const result = compareSchemas(
+      {
+        user: {},
+      },
+      [],
+    );
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "$",
+        severity: "breaking",
+        from: "object",
+        to: "array",
       },
     ]);
   });

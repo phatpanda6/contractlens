@@ -7,12 +7,38 @@ function isObjectSchema(
   return typeof schema === "object" && !Array.isArray(schema);
 }
 
+function getSchemaType(schema: JsonSchemaShape): string {
+  if (Array.isArray(schema)) {
+    return "array";
+  }
+
+  if (isObjectSchema(schema)) {
+    return "object";
+  }
+
+  return schema;
+}
+
 export function compareSchemas(
   expected: JsonSchemaShape,
   actual: JsonSchemaShape,
   currentPath: string = "",
 ): SchemaDiff[] {
   const diffs: SchemaDiff[] = [];
+  const expectedType = getSchemaType(expected);
+  const actualType = getSchemaType(actual);
+
+  // Check if the response is the same type at all
+  if (expectedType !== actualType) {
+    diffs.push({
+      type: "TYPE_CHANGED",
+      path: currentPath || "$",
+      severity: "breaking",
+      from: expectedType,
+      to: actualType,
+    });
+    return diffs;
+  }
 
   // Primitive schema changes represent a direct type mismatch at the current path.
   if (typeof expected === "string" && typeof actual === "string") {
