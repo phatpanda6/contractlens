@@ -40,6 +40,20 @@ export function compareSchemas(
     return diffs;
   }
 
+  // Compare representative item schemas when both schemas are arrays.
+  if (Array.isArray(expected) && Array.isArray(actual)) {
+    // If either array is empty, its item schema is unknown.
+    if (expected.length === 0 || actual.length === 0) {
+      return diffs;
+    }
+
+    const itemPath = currentPath ? `${currentPath}[]` : "$[]";
+
+    const itemDiffs = compareSchemas(expected[0], actual[0], itemPath);
+
+    return itemDiffs;
+  }
+
   // Primitive schema changes represent a direct type mismatch at the current path.
   if (typeof expected === "string" && typeof actual === "string") {
     if (expected !== actual) {
@@ -82,5 +96,6 @@ export function compareSchemas(
       }
     }
   }
+
   return diffs;
 }

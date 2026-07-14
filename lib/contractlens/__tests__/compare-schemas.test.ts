@@ -137,4 +137,52 @@ describe("compareSchemas", () => {
       },
     ]);
   });
+
+  it("returns the nested path when an object becomes an array", () => {
+    const result = compareSchemas(
+      {
+        user: {
+          profile: {
+            name: "string",
+          },
+        },
+      },
+      {
+        user: {
+          profile: [],
+        },
+      },
+    );
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "user.profile",
+        severity: "breaking",
+        from: "object",
+        to: "array",
+      },
+    ]);
+  });
+
+  it("returns a type change when array item types differ", () => {
+    const result = compareSchemas(
+      {
+        prices: ["number"],
+      },
+      {
+        prices: ["string"],
+      },
+    );
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "prices[]",
+        severity: "breaking",
+        from: "number",
+        to: "string",
+      },
+    ]);
+  });
 });
