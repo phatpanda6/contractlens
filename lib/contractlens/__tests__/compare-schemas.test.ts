@@ -185,4 +185,67 @@ describe("compareSchemas", () => {
       },
     ]);
   });
+
+  it("returns the item field path when an array object field changes type", () => {
+    const result = compareSchemas(
+      {
+        products: [
+          {
+            id: "string",
+            price: "number",
+          },
+        ],
+      },
+      {
+        products: [
+          {
+            id: "string",
+            price: "string",
+          },
+        ],
+      },
+    );
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "products[].price",
+        severity: "breaking",
+        from: "number",
+        to: "string",
+      },
+    ]);
+  });
+
+  it("returns no diffs when array item types match", () => {
+    const result = compareSchemas(["number"], ["number"]);
+
+    expect(result).toEqual([]);
+  });
+
+  it("returns no diffs when the baseline array is empty", () => {
+    const result = compareSchemas([], [{ id: "string" }]);
+
+    expect(result).toEqual([]);
+  });
+
+  it("returns no diffs when the latest array is empty", () => {
+    const result = compareSchemas([{ id: "string" }], []);
+
+    expect(result).toEqual([]);
+  });
+
+  it("returns a root item type change when root array item types differ", () => {
+    const result = compareSchemas(["number"], ["string"]);
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "$[]",
+        severity: "breaking",
+        from: "number",
+        to: "string",
+      },
+    ]);
+  });
 });
