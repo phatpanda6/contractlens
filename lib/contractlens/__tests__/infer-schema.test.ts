@@ -51,4 +51,9 @@ describe("inferSchema", () => {
     const result = inferSchema([{ id: "p_123" }]);
     expect(result).toEqual([{ id: "string" }]);
   });
+
+  it("uses the first item schema for heterogeneous arrays", () => {
+    const result = inferSchema(["sale", 123, true]);
+    expect(result).toEqual(["string"]);
+  });
 });

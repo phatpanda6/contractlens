@@ -248,4 +248,88 @@ describe("compareSchemas", () => {
       },
     ]);
   });
+
+  it("returns a breaking type change when a nested number becomes null", () => {
+    const result = compareSchemas(
+      {
+        product: {
+          price: "number",
+        },
+      },
+      {
+        product: {
+          price: "null",
+        },
+      },
+    );
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "product.price",
+        severity: "breaking",
+        from: "number",
+        to: "null",
+      },
+    ]);
+  });
+
+  it("returns a root type change when null becomes an object", () => {
+    const result = compareSchemas("null", {
+      id: "string",
+    });
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "$",
+        severity: "breaking",
+        from: "null",
+        to: "object",
+      },
+    ]);
+  });
+
+  it("returns a root type change when an array becomes an object", () => {
+    const result = compareSchemas(["string"], {
+      value: "string",
+    });
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "$",
+        severity: "breaking",
+        from: "array",
+        to: "object",
+      },
+    ]);
+  });
+
+  it("returns a nested type change when an object becomes a primitive", () => {
+    const result = compareSchemas(
+      {
+        product: {
+          details: {
+            description: "string",
+          },
+        },
+      },
+      {
+        product: {
+          details: "string",
+        },
+      },
+    );
+
+    expect(result).toEqual([
+      {
+        type: "TYPE_CHANGED",
+        path: "product.details",
+        severity: "breaking",
+        from: "object",
+        to: "string",
+      },
+    ]);
+  });
 });
