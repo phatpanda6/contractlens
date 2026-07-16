@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { inferSchema } from "@/lib/contractlens";
 
 export async function POST(
   request: Request,
@@ -22,7 +23,27 @@ export async function POST(
     });
     const responseBody = await response.json();
 
-    return Response.json({ endpoint, responseBody });
+    const detectedSchema = inferSchema(responseBody);
+
+    if (endpoint.baselineSchema === null) {
+      const updatedEndpoint = await prisma.endpoint.update({
+        where: {
+          id: endpoint.id,
+        },
+        data: {
+          baselineExample: responseBody,
+          baselineSchema: detectedSchema,
+        },
+      });
+
+      return Response.json({
+        endpoint: updatedEndpoint,
+        responseBody,
+        detectedSchema,
+      });
+    }
+
+    return Response.json({ endpoint, responseBody, detectedSchema });
   } catch (error) {
     console.error("Failed to run endpoint check", error);
     return Response.json(
