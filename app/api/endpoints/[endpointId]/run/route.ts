@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { inferSchema } from "@/lib/contractlens";
+import {
+  inferSchema,
+  compareSchemas,
+  type JsonSchemaShape,
+} from "@/lib/contractlens";
 
 export async function POST(
   request: Request,
@@ -36,14 +40,42 @@ export async function POST(
         },
       });
 
+      const testRun = await prisma.testRun.create({
+        data: {
+          endpointId: endpoint.id,
+          status: "BASELINE_CREATED",
+          responseBody,
+          detectedSchema,
+          diff: [],
+        },
+      });
+
       return Response.json({
         endpoint: updatedEndpoint,
-        responseBody,
-        detectedSchema,
+        testRun,
       });
     }
 
-    return Response.json({ endpoint, responseBody, detectedSchema });
+    const baselineSchema = endpoint.baselineSchema as JsonSchemaShape;
+    const diffs = compareSchemas(baselineSchema, detectedSchema);
+
+    const hasBreakingChanges = diffs.some(
+      (diff) => diff.severity === "breaking",
+    );
+
+    const status = hasBreakingChanges ? "FAIL" : "PASS";
+
+    const testRun = await prisma.testRun.create({
+      data: {
+        endpointId: endpoint.id,
+        status,
+        responseBody,
+        detectedSchema,
+        diff: diffs,
+      },
+    });
+
+    return Response.json({ endpoint, testRun });
   } catch (error) {
     console.error("Failed to run endpoint check", error);
     return Response.json(
