@@ -25,6 +25,19 @@ export async function POST(
     const response = await fetch(targetUrl, {
       method: endpoint.method,
     });
+
+    if (!response.ok) {
+      const testRun = await prisma.testRun.create({
+        data: {
+          endpointId: endpoint.id,
+          status: "ERROR",
+          errorMessage: `Endpoint returned HTTP ${response.status}`,
+        },
+      });
+
+      return Response.json({ endpoint, testRun });
+    }
+
     const responseBody = await response.json();
 
     const detectedSchema = inferSchema(responseBody);

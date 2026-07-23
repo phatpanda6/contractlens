@@ -33,15 +33,22 @@ model Endpoint {
   testRuns        TestRun[]
 }
 
+enum TestRunStatus {
+  BASELINE_CREATED
+  PASS
+  FAIL
+  ERROR
+}
+
 model TestRun {
-  id             String   @id @default(cuid())
+  id             String        @id @default(cuid())
   endpointId     String
-  endpoint       Endpoint @relation(fields: [endpointId], references: [id])
-  status         String
+  endpoint       Endpoint      @relation(fields: [endpointId], references: [id])
+  status         TestRunStatus
   responseBody   Json?
   detectedSchema Json?
   diff           Json?
   aiExplanation  String?
   errorMessage   String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime      @default(now())
 }
