@@ -38,7 +38,39 @@ export async function POST(
       return Response.json({ endpoint, testRun });
     }
 
-    const responseBody = await response.json();
+    const contentType = response.headers.get("content-type");
+    const mediaType = contentType?.split(";")[0].trim().toLowerCase();
+    const isStandardJson = mediaType === "application/json";
+    const isSpecializedJson = mediaType?.endsWith("+json") === true;
+    const isJsonContentType = isStandardJson || isSpecializedJson;
+
+    if (!isJsonContentType) {
+      const testRun = await prisma.testRun.create({
+        data: {
+          endpointId: endpoint.id,
+          status: "ERROR",
+          errorMessage: `Expected JSON but received ${contentType ?? "no Content-Type header"}`,
+        },
+      });
+
+      return Response.json({ endpoint, testRun });
+    }
+
+    let responseBody;
+
+    try {
+      responseBody = await response.json();
+    } catch {
+      const testRun = await prisma.testRun.create({
+        data: {
+          endpointId: endpoint.id,
+          status: "ERROR",
+          errorMessage: "Endpoint response was not valid JSON",
+        },
+      });
+
+      return Response.json({ endpoint, testRun });
+    }
 
     const detectedSchema = inferSchema(responseBody);
 
