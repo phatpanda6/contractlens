@@ -22,9 +22,31 @@ export async function POST(
     }
 
     const targetUrl = new URL(endpoint.url, request.url);
-    const response = await fetch(targetUrl, {
-      method: endpoint.method,
-    });
+    let response: Response;
+
+    try {
+      response = await fetch(targetUrl, {
+        method: endpoint.method,
+        signal: AbortSignal.timeout(5_000),
+      });
+    } catch (error) {
+      const isTimeout =
+        error instanceof DOMException && error.name === "TimeoutError";
+
+      const errorMessage = isTimeout
+        ? "Endpoint request timed out"
+        : "Endpoint request failed";
+
+      const testRun = await prisma.testRun.create({
+        data: {
+          endpointId: endpoint.id,
+          status: "ERROR",
+          errorMessage,
+        },
+      });
+
+      return Response.json({ endpoint, testRun });
+    }
 
     if (!response.ok) {
       const testRun = await prisma.testRun.create({
