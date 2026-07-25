@@ -4,6 +4,12 @@ import {
   compareSchemas,
   type JsonSchemaShape,
 } from "@/lib/contractlens";
+import {
+  readResponseBodyWithLimit,
+  ResponseBodyTooLargeError,
+} from "@/lib/http/read-response-body-with-limit";
+
+const MAX_RESPONSE_BYTES = 1_048_576;
 
 export async function POST(
   request: Request,
@@ -81,13 +87,28 @@ export async function POST(
     let responseBody;
 
     try {
-      responseBody = await response.json();
-    } catch {
+      const responseText = await readResponseBodyWithLimit(
+        response,
+        MAX_RESPONSE_BYTES,
+      );
+
+      responseBody = JSON.parse(responseText);
+    } catch (error) {
+      let errorMessage: string;
+
+      if (error instanceof ResponseBodyTooLargeError) {
+        errorMessage = "Endpoint response was too large";
+      } else if (error instanceof SyntaxError) {
+        errorMessage = "Endpoint response was not valid JSON";
+      } else {
+        errorMessage = "Endpoint response could not be read";
+      }
+
       const testRun = await prisma.testRun.create({
         data: {
           endpointId: endpoint.id,
           status: "ERROR",
-          errorMessage: "Endpoint response was not valid JSON",
+          errorMessage,
         },
       });
 
