@@ -8,6 +8,7 @@ import {
   readResponseBodyWithLimit,
   ResponseBodyTooLargeError,
 } from "@/lib/http/read-response-body-with-limit";
+import { validateEndpointUrl } from "@/lib/http/validate-endpoint-url";
 
 const MAX_RESPONSE_BYTES = 1_048_576;
 
@@ -27,7 +28,25 @@ export async function POST(
       return Response.json({ error: "Endpoint not found" }, { status: 404 });
     }
 
-    const targetUrl = new URL(endpoint.url, request.url);
+    let targetUrl: URL;
+    try {
+      targetUrl = await validateEndpointUrl(endpoint.url, request.url);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Endpoint URL validation failed";
+      const testRun = await prisma.testRun.create({
+        data: {
+          endpointId: endpoint.id,
+          status: "ERROR",
+          errorMessage,
+        },
+      });
+
+      return Response.json({ endpoint, testRun });
+    }
+
     let response: Response;
 
     try {

@@ -1,7 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { validateEndpointUrl } from "../validate-endpoint-url";
 
+const { lookupMock } = vi.hoisted(() => ({
+  lookupMock: vi.fn(),
+}));
+
+vi.mock("node:dns/promises", () => ({
+  lookup: lookupMock,
+}));
+
 describe("validateEndpointUrl", () => {
+  beforeEach(() => {
+    lookupMock.mockReset();
+    lookupMock.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+  });
+
   it("allows a relative ContractLens demo route", async () => {
     const endpointUrl = "/api/demo/products/v1";
     const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
@@ -243,5 +256,30 @@ describe("validateEndpointUrl", () => {
     await expect(
       validateEndpointUrl(endpointUrl, requestUrl),
     ).rejects.toThrow();
+  });
+
+  it("rejects a hostname that resolves to a private IPv4 address", async () => {
+    const endpointUrl = "https://internal.example.com/products";
+    const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
+
+    lookupMock.mockResolvedValue([{ address: "10.0.0.5", family: 4 }]);
+
+    await expect(
+      validateEndpointUrl(endpointUrl, requestUrl),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a hostname when any resolved address is private", async () => {
+    const endpointUrl = "https://mixed.example.com/products";
+    const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
+
+    lookupMock.mockResolvedValue([
+      { address: "93.184.216.34", family: 4 },
+      { address: "10.0.0.5", family: 4 },
+    ]);
+
+    await expect(validateEndpointUrl(endpointUrl, requestUrl)).rejects.toThrow(
+      "External endpoint URL must not target a private IPv4 address",
+    );
   });
 });
