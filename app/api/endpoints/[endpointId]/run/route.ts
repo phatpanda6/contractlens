@@ -8,7 +8,10 @@ import {
   readResponseBodyWithLimit,
   ResponseBodyTooLargeError,
 } from "@/lib/http/read-response-body-with-limit";
-import { validateEndpointUrl } from "@/lib/http/validate-endpoint-url";
+import {
+  EndpointFetchPolicyError,
+  fetchEndpointWithValidatedRedirects,
+} from "@/lib/http/fetch-endpoint-with-validated-redirects";
 
 const MAX_RESPONSE_BYTES = 1_048_576;
 
@@ -28,39 +31,30 @@ export async function POST(
       return Response.json({ error: "Endpoint not found" }, { status: 404 });
     }
 
-    let targetUrl: URL;
-    try {
-      targetUrl = await validateEndpointUrl(endpoint.url, request.url);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Endpoint URL validation failed";
-      const testRun = await prisma.testRun.create({
-        data: {
-          endpointId: endpoint.id,
-          status: "ERROR",
-          errorMessage,
-        },
-      });
-
-      return Response.json({ endpoint, testRun });
-    }
-
     let response: Response;
 
     try {
-      response = await fetch(targetUrl, {
-        method: endpoint.method,
-        signal: AbortSignal.timeout(5_000),
-      });
+      response = await fetchEndpointWithValidatedRedirects(
+        endpoint.url,
+        request.url,
+        {
+          method: endpoint.method,
+          signal: AbortSignal.timeout(5_000),
+        },
+      );
     } catch (error) {
-      const isTimeout =
-        error instanceof DOMException && error.name === "TimeoutError";
+      let errorMessage: string;
 
-      const errorMessage = isTimeout
-        ? "Endpoint request timed out"
-        : "Endpoint request failed";
+      if (error instanceof EndpointFetchPolicyError) {
+        errorMessage = error.message;
+      } else if (
+        error instanceof DOMException &&
+        error.name === "TimeoutError"
+      ) {
+        errorMessage = "Endpoint request timed out";
+      } else {
+        errorMessage = "Endpoint request failed";
+      }
 
       const testRun = await prisma.testRun.create({
         data: {
