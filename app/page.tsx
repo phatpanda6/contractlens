@@ -1,7 +1,55 @@
-import { compareSchemas, formatDiff, inferSchema } from "@/lib/contractlens";
+import { formatDiff, inferSchema } from "@/lib/contractlens";
 import { demoProductV1, demoProductV2 } from "@/lib/contractlens/demo-data";
 import { prisma } from "@/lib/prisma";
 import { connection } from "next/server";
+import type { SchemaDiff } from "@/lib/contractlens";
+
+function isSchemaDiff(value: unknown): value is SchemaDiff {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (!("type" in value) || !("path" in value) || !("severity" in value)) {
+    return false;
+  }
+
+  const hasValidType =
+    value.type === "MISSING_FIELD" ||
+    value.type === "NEW_FIELD" ||
+    value.type === "TYPE_CHANGED";
+
+  if (!hasValidType) {
+    return false;
+  }
+
+  if (typeof value.path !== "string") {
+    return false;
+  }
+
+  const hasValidSeverity =
+    value.severity === "breaking" || value.severity === "info";
+
+  if (!hasValidSeverity) {
+    return false;
+  }
+
+  if ("from" in value && typeof value.from !== "string") {
+    return false;
+  }
+
+  if ("to" in value && typeof value.to !== "string") {
+    return false;
+  }
+
+  if (
+    value.type === "TYPE_CHANGED" &&
+    (!("from" in value) || !("to" in value))
+  ) {
+    return false;
+  }
+
+  return true;
+}
 
 export default async function Home() {
   await connection();
@@ -46,9 +94,6 @@ export default async function Home() {
   const baselineSchema = inferSchema(baselineResponse);
   const latestSchema = inferSchema(latestResponse);
 
-  const diffs = compareSchemas(baselineSchema, latestSchema);
-  const messages = formatDiff(diffs);
-
   const statusPresentation = {
     BASELINE_CREATED: {
       label: "Baseline created",
@@ -70,6 +115,33 @@ export default async function Home() {
 
   const latestStatusPresentation =
     latestRun === null ? null : statusPresentation[latestRun.status];
+
+  const hasCompletedComparison =
+    latestRun?.status === "PASS" || latestRun?.status === "FAIL";
+
+  const latestDiffs =
+    latestRun !== null &&
+    hasCompletedComparison &&
+    Array.isArray(latestRun.diff) &&
+    latestRun.diff.every(isSchemaDiff)
+      ? latestRun.diff
+      : null;
+
+  const latestDiffCount = latestDiffs === null ? null : latestDiffs.length;
+
+  let unavailableReason: string | null = null;
+
+  if (latestRun === null) {
+    unavailableReason = "Not run yet";
+  } else if (latestRun.status === "BASELINE_CREATED") {
+    unavailableReason = "No comparison yet";
+  } else if (latestRun.status === "ERROR") {
+    unavailableReason = "Check failed";
+  } else if (latestDiffCount === null) {
+    unavailableReason = "Result unavailable";
+  }
+
+  const latestMessages = latestDiffs === null ? null : formatDiff(latestDiffs);
 
   return (
     <main className="min-h-screen bg-stone-50 px-6 py-10 text-stone-950">
@@ -157,7 +229,12 @@ export default async function Home() {
 
           <div className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-stone-500">Changes Found</p>
-            <p className="mt-3 text-2xl font-semibold">{diffs.length}</p>
+            <p className="mt-3 text-2xl font-semibold">
+              {latestDiffCount === null ? "—" : latestDiffCount}
+            </p>
+            {unavailableReason !== null && (
+              <p className="mt-1 text-xs text-stone-500">{unavailableReason}</p>
+            )}
           </div>
         </section>
 
@@ -166,17 +243,26 @@ export default async function Home() {
           <p className="mt-1 text-sm text-stone-500">
             Breaking changes are marked by the deterministic schema engine.
           </p>
-
-          <ul className="mt-6 space-y-3">
-            {messages.map((message) => (
-              <li
-                className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 font-mono text-sm"
-                key={message}
-              >
-                {message}
-              </li>
-            ))}
-          </ul>
+          {latestMessages === null ? (
+            <p className="mt-6 text-sm text-stone-500">
+              {unavailableReason ?? "Comparison unavailable."}
+            </p>
+          ) : latestMessages.length === 0 ? (
+            <p className="mt-6 text-sm text-stone-500">
+              No schema changes detected.
+            </p>
+          ) : (
+            <ul className="mt-6 space-y-3">
+              {latestMessages.map((message) => (
+                <li
+                  className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 font-mono text-sm"
+                  key={message}
+                >
+                  {message}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="flex flex-col gap-4">
