@@ -1,8 +1,6 @@
-import { formatDiff, inferSchema } from "@/lib/contractlens";
-import { demoProductV1, demoProductV2 } from "@/lib/contractlens/demo-data";
+import { formatDiff, type SchemaDiff } from "@/lib/contractlens";
 import { prisma } from "@/lib/prisma";
 import { connection } from "next/server";
-import type { SchemaDiff } from "@/lib/contractlens";
 
 function isSchemaDiff(value: unknown): value is SchemaDiff {
   if (typeof value !== "object" || value === null) {
@@ -69,12 +67,16 @@ export default async function Home() {
           name: true,
           method: true,
           url: true,
+          baselineSchema: true,
+          baselineExample: true,
           testRuns: {
             orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             take: 1,
             select: {
               id: true,
               status: true,
+              responseBody: true,
+              detectedSchema: true,
               createdAt: true,
               diff: true,
               errorMessage: true,
@@ -88,11 +90,12 @@ export default async function Home() {
   const activeEndpoint = project?.endpoints[0] ?? null;
   const latestRun = activeEndpoint?.testRuns[0] ?? null;
 
-  const baselineResponse = demoProductV1;
-  const latestResponse = demoProductV2;
-
-  const baselineSchema = inferSchema(baselineResponse);
-  const latestSchema = inferSchema(latestResponse);
+  const persistedPanels = {
+    baselineResponse: activeEndpoint?.baselineExample ?? null,
+    baselineSchema: activeEndpoint?.baselineSchema ?? null,
+    latestResponse: latestRun?.responseBody ?? null,
+    latestSchema: latestRun?.detectedSchema ?? null,
+  };
 
   const statusPresentation = {
     BASELINE_CREATED: {
@@ -276,16 +279,31 @@ export default async function Home() {
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
               <h3 className="text-xl font-semibold">Baseline response</h3>
-              <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
-                {JSON.stringify(baselineResponse, null, 2)}
-              </pre>
+              {persistedPanels.baselineResponse === null ? (
+                <p className="mt-4 text-sm text-stone-500">
+                  No baseline response captured yet.
+                </p>
+              ) : (
+                <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
+                  {JSON.stringify(persistedPanels.baselineResponse, null, 2)}
+                </pre>
+              )}
             </div>
 
             <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
               <h3 className="text-xl font-semibold">Latest response</h3>
-              <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
-                {JSON.stringify(latestResponse, null, 2)}
-              </pre>
+              {persistedPanels.latestResponse === null ? (
+                <p className="mt-4 text-sm text-stone-500">
+                  {latestRun?.status === "ERROR"
+                    ? (latestRun.errorMessage ??
+                      "The latest check failed before a response could be saved.")
+                    : "No latest response available yet."}
+                </p>
+              ) : (
+                <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
+                  {JSON.stringify(persistedPanels.latestResponse, null, 2)}
+                </pre>
+              )}
             </div>
           </div>
         </section>
@@ -301,16 +319,31 @@ export default async function Home() {
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
               <h3 className="text-xl font-semibold">Baseline schema</h3>
-              <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
-                {JSON.stringify(baselineSchema, null, 2)}
-              </pre>
+              {persistedPanels.baselineSchema === null ? (
+                <p className="mt-4 text-sm text-stone-500">
+                  No baseline schema captured yet.
+                </p>
+              ) : (
+                <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
+                  {JSON.stringify(persistedPanels.baselineSchema, null, 2)}
+                </pre>
+              )}
             </div>
 
             <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
               <h3 className="text-xl font-semibold">Latest schema</h3>
-              <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
-                {JSON.stringify(latestSchema, null, 2)}
-              </pre>
+              {persistedPanels.latestSchema === null ? (
+                <p className="mt-4 text-sm text-stone-500">
+                  {latestRun?.status === "ERROR"
+                    ? (latestRun.errorMessage ??
+                      "The latest check failed before a schema could be detected.")
+                    : "No latest schema available yet."}
+                </p>
+              ) : (
+                <pre className="mt-4 overflow-x-auto rounded-md bg-stone-950 p-4 text-sm leading-6 text-stone-100">
+                  {JSON.stringify(persistedPanels.latestSchema, null, 2)}
+                </pre>
+              )}
             </div>
           </div>
         </section>
