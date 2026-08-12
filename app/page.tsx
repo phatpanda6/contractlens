@@ -1,6 +1,7 @@
 import { formatDiff, type SchemaDiff } from "@/lib/contractlens";
 import { prisma } from "@/lib/prisma";
 import { connection } from "next/server";
+import { RunCheckButton } from "./run-check-button";
 
 function isSchemaDiff(value: unknown): value is SchemaDiff {
   if (typeof value !== "object" || value === null) {
@@ -212,6 +213,10 @@ export default async function Home() {
                   </div>
                 ))}
               </div>
+            )}
+
+            {activeEndpoint !== null && (
+              <RunCheckButton endpointId={activeEndpoint.id} />
             )}
           </div>
 
