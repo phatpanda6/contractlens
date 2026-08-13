@@ -50,6 +50,16 @@ function isSchemaDiff(value: unknown): value is SchemaDiff {
   return true;
 }
 
+const melbourneDateTimeFormatter = new Intl.DateTimeFormat("en-AU", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "Australia/Melbourne",
+  timeZoneName: "short",
+});
+
 export default async function Home() {
   await connection();
 
@@ -72,7 +82,7 @@ export default async function Home() {
           baselineExample: true,
           testRuns: {
             orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-            take: 1,
+            take: 5,
             select: {
               id: true,
               status: true,
@@ -89,7 +99,8 @@ export default async function Home() {
   });
 
   const activeEndpoint = project?.endpoints[0] ?? null;
-  const latestRun = activeEndpoint?.testRuns[0] ?? null;
+  const recentRuns = activeEndpoint?.testRuns ?? [];
+  const latestRun = recentRuns[0] ?? null;
 
   const persistedPanels = {
     baselineResponse: activeEndpoint?.baselineExample ?? null,
@@ -270,6 +281,54 @@ export default async function Home() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+
+        <section className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold">Recent checks</h2>
+
+          <p className="mt-1 text-sm text-stone-500">
+            The five most recent persisted checks for this endpoint.
+          </p>
+
+          {recentRuns.length === 0 ? (
+            <p className="mt-6 text-sm text-stone-500">
+              No checks have been run yet.
+            </p>
+          ) : (
+            <ol className="mt-6 divide-y divide-stone-100">
+              {recentRuns.map((run) => {
+                const runStatusPresentation = statusPresentation[run.status];
+
+                return (
+                  <li
+                    className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0"
+                    key={run.id}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${runStatusPresentation.colorClasses}`}
+                      >
+                        {runStatusPresentation.label}
+                      </span>
+                      <time
+                        className="text-sm text-stone-500"
+                        dateTime={run.createdAt.toISOString()}
+                      >
+                        {melbourneDateTimeFormatter.format(run.createdAt)}
+                      </time>
+                    </div>
+
+                    {run.status === "ERROR" && (
+                      <p className="text-sm text-red-700">
+                        {run.errorMessage ??
+                          "The check failed, but no error details were saved."}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
           )}
         </section>
 
