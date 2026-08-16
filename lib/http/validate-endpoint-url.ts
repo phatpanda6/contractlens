@@ -166,6 +166,11 @@ export async function validateEndpointUrl(
   const resolvedUrl = new URL(endpointUrl, requestUrl);
   const hostname = resolvedUrl.hostname;
 
+  const isProtocolRelativeUrl = endpointUrl.startsWith("//");
+  if (isProtocolRelativeUrl) {
+    throw new Error("Protocol-relative endpoint URL is not allowed");
+  }
+
   const isRelativeUrl = endpointUrl.startsWith("/");
   const isDemoRoute = resolvedUrl.pathname.startsWith("/api/demo/");
 

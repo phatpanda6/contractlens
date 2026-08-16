@@ -282,4 +282,22 @@ describe("validateEndpointUrl", () => {
       "External endpoint URL must not target a private IPv4 address",
     );
   });
+
+  it("rejects a protocol-relative loopback URL that looks like a demo route", async () => {
+    const endpointUrl = "//127.0.0.1/api/demo/products/v1";
+    const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
+
+    await expect(validateEndpointUrl(endpointUrl, requestUrl)).rejects.toThrow(
+      "Protocol-relative endpoint URL is not allowed",
+    );
+  });
+
+  it("rejects a protocol-relative public URL that looks like a demo route", async () => {
+    const endpointUrl = "//example.com/api/demo/products/v1";
+    const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
+
+    await expect(validateEndpointUrl(endpointUrl, requestUrl)).rejects.toThrow(
+      "Protocol-relative endpoint URL is not allowed",
+    );
+  });
 });
