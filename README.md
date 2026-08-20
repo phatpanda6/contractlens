@@ -50,6 +50,7 @@ Implemented so far:
 - `/api/demo/products/v1` and `/api/demo/products/v2` provide predictable response drift.
 - Prisma models and a seed script define a demo project, endpoint, baseline schema, and baseline example.
 - Read routes expose projects and endpoint details; the initial run route can fetch a configured endpoint response.
+- GitHub Actions runs dependency installation, Vitest, ESLint, and the production build on pushes and pull requests.
 
 Not complete yet:
 
@@ -57,7 +58,7 @@ Not complete yet:
 - A complete baseline -> run -> compare -> PASS/FAIL -> persisted test-history workflow.
 - Safe public endpoint-fetching controls and useful fetch failure states.
 - A database-backed UI; the homepage still uses hard-coded demo data.
-- CI, deployment, and browser E2E coverage.
+- Deployment and browser E2E coverage.
 - AI explanations
 - CLI
 
@@ -252,7 +253,7 @@ npm run lint
 2. Complete and persist the baseline -> run -> compare -> history workflow.
 3. Add safe endpoint fetching, typed failure states, and route integration tests.
 4. Connect the workflow to the UI and replace hard-coded demo data.
-5. Add CI, browser E2E coverage, deployment, and minimal structured logs.
+5. Add browser E2E coverage, deployment, and minimal structured logs.
 6. Publish a public demo, architecture notes, trade-offs, and limitations.
 7. Consider a minimal CLI with exit code `1` on breaking changes.
 8. Add AI explanations only after deterministic detection is complete.
