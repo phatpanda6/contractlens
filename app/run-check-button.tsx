@@ -5,12 +5,20 @@ import { useState } from "react";
 
 type RunCheckButtonProps = {
   endpointId: string;
+  disabled: boolean;
+  disabledReason: string | null;
 };
 
-export function RunCheckButton({ endpointId }: RunCheckButtonProps) {
+export function RunCheckButton({
+  endpointId,
+  disabled,
+  disabledReason,
+}: RunCheckButtonProps) {
   const router = useRouter();
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isButtonDisabled = isRunning || disabled;
 
   async function handleRun() {
     setError(null);
@@ -38,12 +46,16 @@ export function RunCheckButton({ endpointId }: RunCheckButtonProps) {
       <button
         type="button"
         onClick={handleRun}
-        disabled={isRunning}
+        disabled={isButtonDisabled}
         aria-busy={isRunning}
         className="inline-flex min-h-10 items-center justify-center rounded-md bg-stone-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors enabled:hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isRunning ? "Running…" : "Run check"}
       </button>
+
+      {disabled && disabledReason !== null && (
+        <p className="mt-2 text-sm text-stone-500">{disabledReason}</p>
+      )}
 
       {error !== null && (
         <p role="alert" className="mt-2 text-sm text-red-700">
