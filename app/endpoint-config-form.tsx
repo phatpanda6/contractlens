@@ -2,6 +2,7 @@
 
 import { useState, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
+import { RunCheckButton } from "./run-check-button";
 
 type EndpointConfigFormProps = {
   endpointId: string;
@@ -21,10 +22,30 @@ export function EndpointConfigForm({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [savedName, setSavedName] = useState(initialName);
+  const [savedUrl, setSavedUrl] = useState(initialUrl);
+
+  const trimmedName = name.trim();
+  const trimmedUrl = url.trim();
+  const hasEmptyField = trimmedName === "" || trimmedUrl === "";
+  const hasUnsavedChanges = name !== savedName || url !== savedUrl;
+
+  const isRunDisabled = hasUnsavedChanges || hasEmptyField || isSaving;
+
+  const runDisabledReason = hasUnsavedChanges
+    ? "Save your changes before running a check."
+    : null;
+
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError(null);
+
+    if (hasEmptyField) {
+      setError("Name and URL cannot be empty");
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -34,14 +55,20 @@ export function EndpointConfigForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
-          url,
+          name: trimmedName,
+          url: trimmedUrl,
         }),
       });
 
       if (!response.ok) {
         throw new Error("The endpoint could not be updated");
       }
+
+      setName(trimmedName);
+      setUrl(trimmedUrl);
+      setSavedName(trimmedName);
+      setSavedUrl(trimmedUrl);
+
       router.refresh();
     } catch (caughtError) {
       console.error("could not update endpoint", caughtError);
@@ -75,7 +102,10 @@ export function EndpointConfigForm({
           type="text"
           name="name"
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => {
+            setName(event.target.value);
+            setError(null);
+          }}
           className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
         />
       </div>
@@ -92,7 +122,10 @@ export function EndpointConfigForm({
           type="text"
           name="url"
           value={url}
-          onChange={(event) => setUrl(event.target.value)}
+          onChange={(event) => {
+            setUrl(event.target.value);
+            setError(null);
+          }}
           className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
         />
       </div>
@@ -110,6 +143,12 @@ export function EndpointConfigForm({
           {error}
         </p>
       )}
+
+      <RunCheckButton
+        endpointId={endpointId}
+        disabled={isRunDisabled}
+        disabledReason={runDisabledReason}
+      />
     </form>
   );
 }
