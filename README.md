@@ -51,6 +51,7 @@ Implemented so far:
 - Prisma models and a seed script define a demo project, endpoint, baseline schema, and baseline example.
 - Read routes expose projects and endpoint details; the initial run route can fetch a configured endpoint response.
 - GitHub Actions runs dependency installation, Vitest, ESLint, and the production build on pushes and pull requests.
+- Playwright covers dashboard loading and the unsaved endpoint save workflow in Chromium.
 
 Not complete yet:
 
@@ -58,7 +59,7 @@ Not complete yet:
 - A complete baseline -> run -> compare -> PASS/FAIL -> persisted test-history workflow.
 - Safe public endpoint-fetching controls and useful fetch failure states.
 - A database-backed UI; the homepage still uses hard-coded demo data.
-- Deployment and browser E2E coverage.
+- CI-managed browser E2E coverage with an isolated test database.
 - AI explanations
 - CLI
 
@@ -207,6 +208,7 @@ This keeps correctness in code and uses AI for communication.
 - TypeScript
 - Tailwind CSS
 - Vitest
+- Playwright
 - ESLint
 - Prisma and PostgreSQL schema
 
@@ -223,6 +225,12 @@ Install dependencies:
 npm install
 ```
 
+Install the Chromium browser used by Playwright:
+
+```bash
+npx playwright install chromium
+```
+
 Run the development server:
 
 ```bash
@@ -233,6 +241,12 @@ Run tests:
 
 ```bash
 npm test
+```
+
+Run browser end-to-end tests:
+
+```bash
+npm run test:e2e
 ```
 
 Run tests in watch mode:
