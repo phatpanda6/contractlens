@@ -51,7 +51,7 @@ Implemented so far:
 - Prisma models and a seed script define a demo project, endpoint, baseline schema, and baseline example.
 - Read routes expose projects and endpoint details; the initial run route can fetch a configured endpoint response.
 - GitHub Actions runs dependency installation, Vitest, ESLint, and the production build on pushes and pull requests.
-- Playwright covers dashboard loading and the unsaved endpoint save workflow in Chromium.
+- Playwright runs in GitHub Actions against isolated PostgreSQL and covers dashboard loading, unsaved endpoint protection, and the persisted v1 -> v2 FAIL journey.
 
 Not complete yet:
 
@@ -59,7 +59,6 @@ Not complete yet:
 - A complete baseline -> run -> compare -> PASS/FAIL -> persisted test-history workflow.
 - Safe public endpoint-fetching controls and useful fetch failure states.
 - A database-backed UI; the homepage still uses hard-coded demo data.
-- CI-managed browser E2E coverage with an isolated test database.
 - AI explanations
 - CLI
 
