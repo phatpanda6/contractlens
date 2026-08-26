@@ -36,31 +36,35 @@ The key product difference is automatic baseline capture from a live response. C
 
 ## Current Status
 
-ContractLens is in active development. The repository contains the first version
-of the core engine, demo API routes, a Prisma schema and seed data, read APIs for
-projects and endpoints, and an initial endpoint-run route.
+ContractLens has a working database-backed demo. The seeded endpoint can use a
+live response as its baseline, run the same contract against a later response,
+and keep the result in PostgreSQL so it is still visible after a page reload.
 
-Implemented so far:
+What works today:
 
-- `inferSchema()` converts real JSON-like values into simplified schema shapes.
-- `compareSchemas()` detects direct object-field additions, removals, and primitive type changes.
-- `formatDiff()` turns structured diffs into readable messages.
-- Vitest tests cover the implemented core engine behavior, including an end-to-end fixture test.
-- The homepage shows a fake demo contract check using the core engine.
-- `/api/demo/products/v1` and `/api/demo/products/v2` provide predictable response drift.
-- Prisma models and a seed script define a demo project, endpoint, baseline schema, and baseline example.
-- Read routes expose projects and endpoint details; the initial run route can fetch a configured endpoint response.
-- GitHub Actions runs dependency installation, Vitest, ESLint, and the production build on pushes and pull requests.
-- Playwright runs in GitHub Actions against isolated PostgreSQL and covers dashboard loading, unsaved endpoint protection, and the persisted v1 -> v2 FAIL journey.
+- `inferSchema()` converts JSON values into a small schema representation.
+- `compareSchemas()` handles nested objects, array item schemas, null changes,
+  and object/array/primitive type changes.
+- Missing fields and type changes are marked as breaking. New fields are kept as
+  informational changes.
+- The endpoint run route saves baselines, PASS/FAIL results, response schemas,
+  readable diffs, and useful error records.
+- External endpoint requests are limited to validated public HTTPS URLs. Private
+  and loopback targets are blocked, redirects are checked again, and requests
+  have a timeout and response-size limit.
+- The homepage reads the demo project, endpoint configuration, latest result,
+  response data, and five most recent checks from PostgreSQL.
+- GitHub Actions runs Vitest, ESLint, the production build, and Playwright on
+  pushes and pull requests.
+- Playwright uses an isolated PostgreSQL service in CI and covers the persisted
+  v1 baseline -> v2 FAIL journey through Chromium.
 
-Not complete yet:
+Still to do:
 
-- Recursive nested and array schema comparison.
-- A complete baseline -> run -> compare -> PASS/FAIL -> persisted test-history workflow.
-- Safe public endpoint-fetching controls and useful fetch failure states.
-- A database-backed UI; the homepage still uses hard-coded demo data.
-- AI explanations
-- CLI
+- Add small, structured run logs for production debugging.
+- Verify and document the production demo setup.
+- Add a CLI after the web workflow is settled.
+- Add AI explanations without giving AI control over PASS/FAIL.
 
 ## Core Engine
 
@@ -194,11 +198,16 @@ This keeps correctness in code and uses AI for communication.
 
 ## Known Limitations
 
-- Array schemas are currently inferred from the first item only.
-- Heterogeneous arrays are not currently represented.
-- Nested object, array, and container-type comparison are not fully implemented yet.
-- The endpoint-run route currently fetches and returns JSON; it does not yet create a baseline, calculate a result, or save a `TestRun`.
-- Non-2xx responses, invalid JSON, timeouts, response-size limits, and safe public endpoint-fetching policy are not implemented yet.
+- Array schemas use the first item as their representative shape. Empty arrays
+  have no known item shape, and heterogeneous arrays are not fully represented.
+- The current UI is centred on the seeded Demo Project and its first endpoint;
+  project creation and endpoint selection are not part of this demo yet.
+- The dashboard shows the five most recent checks rather than an unbounded
+  history.
+- Endpoint checks require JSON responses and use a five-second timeout and a
+  1 MiB response limit.
+- Production observability is still limited to basic error logging.
+- AI explanations and the CLI have not been implemented.
 
 ## Tech Stack
 
@@ -210,11 +219,13 @@ This keeps correctness in code and uses AI for communication.
 - Playwright
 - ESLint
 - Prisma and PostgreSQL schema
+- GitHub Actions
 
 Planned later:
 
-- Vercel deployment
+- Structured production logs
 - Vercel AI SDK or another structured AI integration
+- A small CLI
 
 ## Development
 
@@ -262,11 +273,10 @@ npm run lint
 
 ## Roadmap
 
-1. Finish recursive schema comparison and its test coverage.
-2. Complete and persist the baseline -> run -> compare -> history workflow.
-3. Add safe endpoint fetching, typed failure states, and route integration tests.
-4. Connect the workflow to the UI and replace hard-coded demo data.
-5. Add browser E2E coverage, deployment, and minimal structured logs.
-6. Publish a public demo, architecture notes, trade-offs, and limitations.
-7. Consider a minimal CLI with exit code `1` on breaking changes.
-8. Add AI explanations only after deterministic detection is complete.
+1. Add minimal structured logs for endpoint runs and failures.
+2. Verify the production demo and document its setup, architecture, tests, and
+   trade-offs.
+3. Polish the main demo's error, empty, loading, and accessibility states.
+4. Consider a minimal CLI with readable diffs and exit code `1` for breaking
+   changes.
+5. Add AI explanations only after the deterministic result is already known.
