@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { demoProductV2 } from "@/lib/contractlens/demo-data";
 import { POST } from "./route";
+import { demoProductV1, demoProductV2 } from "@/lib/contractlens/demo-data";
 
 const prismaMocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   createTestRun: vi.fn(),
+  updateEndpoint: vi.fn(),
 }));
 
 const fetchMock = vi.fn();
@@ -13,6 +14,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     endpoint: {
       findUnique: prismaMocks.findUnique,
+      update: prismaMocks.updateEndpoint,
     },
     testRun: {
       create: prismaMocks.createTestRun,
@@ -24,11 +26,13 @@ describe("POST /api/endpoints/[endpointId]/run", () => {
   beforeEach(() => {
     prismaMocks.findUnique.mockReset();
     prismaMocks.createTestRun.mockReset();
+    prismaMocks.updateEndpoint.mockReset();
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -43,6 +47,12 @@ describe("POST /api/endpoints/[endpointId]/run", () => {
         price: "number",
         inStock: "boolean",
       },
+    });
+
+    vi.spyOn(console, "info").mockImplementation(() => {});
+
+    prismaMocks.createTestRun.mockResolvedValue({
+      id: "run-1",
     });
 
     fetchMock.mockResolvedValue(Response.json(demoProductV2));
@@ -81,5 +91,92 @@ describe("POST /api/endpoints/[endpointId]/run", () => {
         ],
       }),
     });
+  });
+
+  it("logs a structured summary when a breaking run completes", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    prismaMocks.findUnique.mockResolvedValue({
+      id: "endpoint-1",
+      method: "GET",
+      url: "/api/demo/products/v2",
+      baselineSchema: {
+        id: "string",
+        title: "string",
+        price: "number",
+        inStock: "boolean",
+      },
+    });
+
+    prismaMocks.createTestRun.mockResolvedValue({
+      id: "run-1",
+      endpointId: "endpoint-1",
+      status: "FAIL",
+    });
+
+    fetchMock.mockResolvedValue(Response.json(demoProductV2));
+
+    const request = new Request(
+      "http://localhost:3000/api/endpoints/endpoint-1/run",
+      { method: "POST" },
+    );
+
+    await POST(request, {
+      params: Promise.resolve({ endpointId: "endpoint-1" }),
+    });
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "endpoint_run_completed",
+        runId: "run-1",
+        endpointId: "endpoint-1",
+        status: "FAIL",
+        durationMs: expect.any(Number),
+        diffCount: 3,
+      }),
+    );
+  });
+
+  it("logs a structured summary when a baseline is created", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    prismaMocks.findUnique.mockResolvedValue({
+      id: "endpoint-1",
+      method: "GET",
+      url: "/api/demo/products/v1",
+      baselineSchema: null,
+    });
+
+    prismaMocks.updateEndpoint.mockResolvedValue({
+      id: "endpoint-1",
+    });
+
+    prismaMocks.createTestRun.mockResolvedValue({
+      id: "run-1",
+      endpointId: "endpoint-1",
+      status: "BASELINE_CREATED",
+    });
+
+    fetchMock.mockResolvedValue(Response.json(demoProductV1));
+
+    const request = new Request(
+      "http://localhost:3000/api/endpoints/endpoint-1/run",
+      { method: "POST" },
+    );
+
+    await POST(request, {
+      params: Promise.resolve({ endpointId: "endpoint-1" }),
+    });
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "endpoint_run_completed",
+        runId: "run-1",
+        endpointId: "endpoint-1",
+        status: "BASELINE_CREATED",
+        durationMs: expect.any(Number),
+        diffCount: 0,
+      }),
+    );
   });
 });
