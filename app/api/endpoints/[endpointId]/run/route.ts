@@ -19,6 +19,7 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ endpointId: string }> },
 ) {
+  const startedAt = Date.now();
   const { endpointId } = await context.params;
   try {
     const endpoint = await prisma.endpoint.findUnique({
@@ -151,6 +152,15 @@ export async function POST(
         },
       });
 
+      console.info({
+        event: "endpoint_run_completed",
+        runId: testRun.id,
+        endpointId: endpoint.id,
+        status: "BASELINE_CREATED",
+        durationMs: Date.now() - startedAt,
+        diffCount: 0,
+      });
+
       return Response.json({
         endpoint: updatedEndpoint,
         testRun,
@@ -174,6 +184,15 @@ export async function POST(
         detectedSchema,
         diff: diffs,
       },
+    });
+
+    console.info({
+      event: "endpoint_run_completed",
+      runId: testRun.id,
+      endpointId: endpoint.id,
+      status,
+      durationMs: Date.now() - startedAt,
+      diffCount: diffs.length,
     });
 
     return Response.json({ endpoint, testRun });
