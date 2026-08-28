@@ -13,6 +13,31 @@ import {
   fetchEndpointWithValidatedRedirects,
 } from "@/lib/http/fetch-endpoint-with-validated-redirects";
 
+type EndpointRunStatus = "BASELINE_CREATED" | "PASS" | "FAIL" | "ERROR";
+
+function logEndpointRunCompleted({
+  runId,
+  endpointId,
+  status,
+  startedAt,
+  diffCount,
+}: {
+  runId: string;
+  endpointId: string;
+  status: EndpointRunStatus;
+  startedAt: number;
+  diffCount: number;
+}) {
+  console.info({
+    event: "endpoint_run_completed",
+    runId,
+    endpointId,
+    status,
+    durationMs: Date.now() - startedAt,
+    diffCount,
+  });
+}
+
 const MAX_RESPONSE_BYTES = 1_048_576;
 
 export async function POST(
@@ -65,6 +90,14 @@ export async function POST(
         },
       });
 
+      logEndpointRunCompleted({
+        runId: testRun.id,
+        endpointId: endpoint.id,
+        status: "ERROR",
+        startedAt,
+        diffCount: 0,
+      });
+
       return Response.json({ endpoint, testRun });
     }
 
@@ -75,6 +108,14 @@ export async function POST(
           status: "ERROR",
           errorMessage: `Endpoint returned HTTP ${response.status}`,
         },
+      });
+
+      logEndpointRunCompleted({
+        runId: testRun.id,
+        endpointId: endpoint.id,
+        status: "ERROR",
+        startedAt,
+        diffCount: 0,
       });
 
       return Response.json({ endpoint, testRun });
@@ -93,6 +134,14 @@ export async function POST(
           status: "ERROR",
           errorMessage: `Expected JSON but received ${contentType ?? "no Content-Type header"}`,
         },
+      });
+
+      logEndpointRunCompleted({
+        runId: testRun.id,
+        endpointId: endpoint.id,
+        status: "ERROR",
+        startedAt,
+        diffCount: 0,
       });
 
       return Response.json({ endpoint, testRun });
@@ -126,6 +175,14 @@ export async function POST(
         },
       });
 
+      logEndpointRunCompleted({
+        runId: testRun.id,
+        endpointId: endpoint.id,
+        status: "ERROR",
+        startedAt,
+        diffCount: 0,
+      });
+
       return Response.json({ endpoint, testRun });
     }
 
@@ -152,12 +209,11 @@ export async function POST(
         },
       });
 
-      console.info({
-        event: "endpoint_run_completed",
+      logEndpointRunCompleted({
         runId: testRun.id,
         endpointId: endpoint.id,
         status: "BASELINE_CREATED",
-        durationMs: Date.now() - startedAt,
+        startedAt,
         diffCount: 0,
       });
 
@@ -186,12 +242,11 @@ export async function POST(
       },
     });
 
-    console.info({
-      event: "endpoint_run_completed",
+    logEndpointRunCompleted({
       runId: testRun.id,
       endpointId: endpoint.id,
       status,
-      durationMs: Date.now() - startedAt,
+      startedAt,
       diffCount: diffs.length,
     });
 

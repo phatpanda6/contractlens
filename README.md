@@ -58,10 +58,11 @@ What works today:
   pushes and pull requests.
 - Playwright uses an isolated PostgreSQL service in CI and covers the persisted
   v1 baseline -> v2 FAIL journey through Chromium.
+- Every persisted endpoint run emits a structured summary containing its run ID,
+  endpoint ID, status, duration, and diff count.
 
 Still to do:
 
-- Add small, structured run logs for production debugging.
 - Verify and document the production demo setup.
 - Add a CLI after the web workflow is settled.
 - Add AI explanations without giving AI control over PASS/FAIL.
@@ -206,7 +207,8 @@ This keeps correctness in code and uses AI for communication.
   history.
 - Endpoint checks require JSON responses and use a five-second timeout and a
   1 MiB response limit.
-- Production observability is still limited to basic error logging.
+- Production observability currently consists of structured per-run summaries;
+  metrics and alerting are not implemented.
 - AI explanations and the CLI have not been implemented.
 
 ## Tech Stack
@@ -223,7 +225,6 @@ This keeps correctness in code and uses AI for communication.
 
 Planned later:
 
-- Structured production logs
 - Vercel AI SDK or another structured AI integration
 - A small CLI
 
@@ -273,10 +274,9 @@ npm run lint
 
 ## Roadmap
 
-1. Add minimal structured logs for endpoint runs and failures.
-2. Verify the production demo and document its setup, architecture, tests, and
+1. Verify the production demo and document its setup, architecture, tests, and
    trade-offs.
-3. Polish the main demo's error, empty, loading, and accessibility states.
-4. Consider a minimal CLI with readable diffs and exit code `1` for breaking
+2. Polish the main demo's error, empty, loading, and accessibility states.
+3. Consider a minimal CLI with readable diffs and exit code `1` for breaking
    changes.
-5. Add AI explanations only after the deterministic result is already known.
+4. Add AI explanations only after the deterministic result is already known.
