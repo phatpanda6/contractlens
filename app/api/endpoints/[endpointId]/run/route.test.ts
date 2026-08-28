@@ -179,4 +179,184 @@ describe("POST /api/endpoints/[endpointId]/run", () => {
       }),
     );
   });
+
+  it("logs a structured summary when an endpoint returns a non-2xx response", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    prismaMocks.findUnique.mockResolvedValue({
+      id: "endpoint-1",
+      method: "GET",
+      url: "/api/demo/products/v1",
+    });
+
+    prismaMocks.createTestRun.mockResolvedValue({
+      id: "run-1",
+      endpointId: "endpoint-1",
+      status: "ERROR",
+    });
+
+    fetchMock.mockResolvedValue(new Response(null, { status: 503 }));
+
+    const request = new Request(
+      "http://localhost:3000/api/endpoints/endpoint-1/run",
+      { method: "POST" },
+    );
+
+    await POST(request, {
+      params: Promise.resolve({ endpointId: "endpoint-1" }),
+    });
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "endpoint_run_completed",
+        runId: "run-1",
+        endpointId: "endpoint-1",
+        status: "ERROR",
+        durationMs: expect.any(Number),
+        diffCount: 0,
+      }),
+    );
+  });
+
+  it("logs a structured summary when fetching the endpoint fails", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    prismaMocks.findUnique.mockResolvedValue({
+      id: "endpoint-1",
+      method: "GET",
+      url: "/api/demo/products/v1",
+    });
+
+    prismaMocks.createTestRun.mockResolvedValue({
+      id: "run-1",
+      endpointId: "endpoint-1",
+      status: "ERROR",
+    });
+
+    fetchMock.mockRejectedValue(new Error("Network unavailable"));
+
+    const request = new Request(
+      "http://localhost:3000/api/endpoints/endpoint-1/run",
+      { method: "POST" },
+    );
+
+    await POST(request, {
+      params: Promise.resolve({ endpointId: "endpoint-1" }),
+    });
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "endpoint_run_completed",
+        runId: "run-1",
+        endpointId: "endpoint-1",
+        status: "ERROR",
+        durationMs: expect.any(Number),
+        diffCount: 0,
+      }),
+    );
+  });
+
+  it("logs a structured summary when the response is not JSON", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    prismaMocks.findUnique.mockResolvedValue({
+      id: "endpoint-1",
+      method: "GET",
+      url: "/api/demo/products/v1",
+    });
+
+    prismaMocks.createTestRun.mockResolvedValue({
+      id: "run-1",
+      endpointId: "endpoint-1",
+      status: "ERROR",
+    });
+
+    fetchMock.mockResolvedValue(
+      new Response("plain text", {
+        status: 200,
+        headers: {
+          "content-type": "text/plain",
+        },
+      }),
+    );
+
+    const request = new Request(
+      "http://localhost:3000/api/endpoints/endpoint-1/run",
+      { method: "POST" },
+    );
+
+    await POST(request, {
+      params: Promise.resolve({ endpointId: "endpoint-1" }),
+    });
+
+    expect(prismaMocks.createTestRun).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        status: "ERROR",
+        errorMessage: "Expected JSON but received text/plain",
+      }),
+    });
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "endpoint_run_completed",
+        runId: "run-1",
+        endpointId: "endpoint-1",
+        status: "ERROR",
+        durationMs: expect.any(Number),
+        diffCount: 0,
+      }),
+    );
+  });
+
+  it("logs a structured summary when the response contains invalid JSON", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    prismaMocks.findUnique.mockResolvedValue({
+      id: "endpoint-1",
+      method: "GET",
+      url: "/api/demo/products/v1",
+    });
+
+    prismaMocks.createTestRun.mockResolvedValue({
+      id: "run-1",
+      endpointId: "endpoint-1",
+      status: "ERROR",
+    });
+
+    fetchMock.mockResolvedValue(
+      new Response("not valid JSON", {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+        },
+      }),
+    );
+
+    const request = new Request(
+      "http://localhost:3000/api/endpoints/endpoint-1/run",
+      { method: "POST" },
+    );
+
+    await POST(request, {
+      params: Promise.resolve({ endpointId: "endpoint-1" }),
+    });
+
+    expect(prismaMocks.createTestRun).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        status: "ERROR",
+        errorMessage: "Endpoint response was not valid JSON",
+      }),
+    });
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "endpoint_run_completed",
+        runId: "run-1",
+        endpointId: "endpoint-1",
+        status: "ERROR",
+        durationMs: expect.any(Number),
+        diffCount: 0,
+      }),
+    );
+  });
 });
