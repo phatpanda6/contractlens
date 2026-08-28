@@ -34,6 +34,21 @@ The key product difference is automatic baseline capture from a live response. C
 - readable impact explanations
 - future AI explanations built on top of detected diffs
 
+## Live Demo
+
+[Open the deployed ContractLens demo](https://contractlens-iota.vercel.app/)
+
+To try the breaking-change workflow:
+
+1. Enter `/api/demo/products/v1` in **Endpoint URL**, then click **Save endpoint** and **Run check**.
+2. Confirm that the status is `Pass` and **Changes Found** is `0`.
+3. Change **Endpoint URL** to `/api/demo/products/v2`, then click **Save endpoint** and **Run check** again.
+4. Confirm that the status is `Fail` and **Changes Found** is `3`. The detected changes should include:
+
+   - `price` changed from number to string
+   - `title` is missing
+   - `name` was added
+
 ## Current Status
 
 ContractLens has a working database-backed demo. The seeded endpoint can use a
@@ -63,7 +78,8 @@ What works today:
 
 Still to do:
 
-- Verify and document the production demo setup.
+- Document the production architecture, test strategy, and key engineering
+  trade-offs.
 - Add a CLI after the web workflow is settled.
 - Add AI explanations without giving AI control over PASS/FAIL.
 
@@ -274,7 +290,7 @@ npm run lint
 
 ## Roadmap
 
-1. Verify the production demo and document its setup, architecture, tests, and
+1. Document the production architecture, test strategy, and key engineering
    trade-offs.
 2. Polish the main demo's error, empty, loading, and accessibility states.
 3. Consider a minimal CLI with readable diffs and exit code `1` for breaking
