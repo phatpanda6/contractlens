@@ -78,8 +78,7 @@ What works today:
 
 Still to do:
 
-- Document the production architecture, test strategy, and key engineering
-  trade-offs.
+- Polish the main demo's error, empty, loading, and accessibility states.
 - Add a CLI after the web workflow is settled.
 - Add AI explanations without giving AI control over PASS/FAIL.
 
@@ -212,6 +211,22 @@ Browser
   -> Dashboard renders the status, differences, and history
 ```
 
+## Engineering Trade-offs
+
+ContractLens intentionally keeps the MVP narrow. These decisions balance
+security, predictable behaviour, and implementation complexity.
+
+| Decision | Benefit | Cost |
+| --- | --- | --- |
+| Simplified schema model | Inspecting the first array item keeps schema inference understandable, testable, and predictable for homogeneous collections. | Differences in later items are not represented, so heterogeneous arrays can produce false passes. |
+| Deterministic PASS/FAIL | The same schemas always produce reproducible results that are straightforward to test, debug, and trust across environments. | The engine cannot interpret business context or make flexible, case-by-case judgements without an explicit rule. |
+| Restricted endpoint fetching | Public HTTPS validation, redirect checks, a five-second timeout, a 1 MiB limit, and JSON-only responses reduce SSRF risk and limit server resource use. | Legitimate APIs may be excluded when they are private, slow, larger than 1 MiB, or return a non-JSON response. |
+| Seeded shared demo | Visitors can try the complete workflow immediately without creating an account or configuring a project. | State is shared between visitors, history is not private, and another visitor can change the endpoint currently shown by the demo. |
+
+A reset action, temporary per-session data, or authenticated project ownership
+could provide stronger isolation later, but those features are outside the
+current MVP.
+
 ## Test Strategy
 
 ContractLens uses several test layers because no single test can cover every
@@ -323,9 +338,7 @@ npm run lint
 
 ## Roadmap
 
-1. Document the production architecture, test strategy, and key engineering
-   trade-offs.
-2. Polish the main demo's error, empty, loading, and accessibility states.
-3. Consider a minimal CLI with readable diffs and exit code `1` for breaking
+1. Polish the main demo's error, empty, loading, and accessibility states.
+2. Consider a minimal CLI with readable diffs and exit code `1` for breaking
    changes.
-4. Add AI explanations only after the deterministic result is already known.
+3. Add AI explanations only after the deterministic result is already known.
