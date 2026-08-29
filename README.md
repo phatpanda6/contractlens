@@ -169,6 +169,8 @@ Returns:
 
 ## Architecture Notes
 
+### Core engine
+
 The core engine is intentionally pure TypeScript. It does not depend on React, Next.js, Prisma, a database, or AI.
 
 This separation keeps the most important business logic:
@@ -191,6 +193,24 @@ real API response
 ```
 
 Unit tests verify each function in isolation, and an integration test verifies the full engine flow from real response data to formatted diff messages.
+
+### Run-check request flow
+
+When a user runs an endpoint check, the request passes through the browser,
+server, core engine, and database before the updated result is rendered.
+
+```text
+Browser
+  -> User clicks Run check and the client sends a POST request
+  -> Next.js route loads the endpoint configuration through Prisma
+  -> Route validates and safely fetches the configured API
+  -> Core engine infers the schema and compares it when a baseline exists
+  -> Prisma saves the TestRun in PostgreSQL
+  -> Route writes a structured log and returns a response
+  -> Client calls router.refresh()
+  -> Server Component reads the persisted result from PostgreSQL
+  -> Dashboard renders the status, differences, and history
+```
 
 ## Test Strategy
 
