@@ -192,6 +192,19 @@ real API response
 
 Unit tests verify each function in isolation, and an integration test verifies the full engine flow from real response data to formatted diff messages.
 
+## Test Strategy
+
+ContractLens uses several test layers because no single test can cover every
+part of the system.
+
+| Layer | Tool or environment | What it checks |
+| --- | --- | --- |
+| Unit tests | Vitest | Exercises the pure schema engine and HTTP safety helpers with focused inputs and expected outputs. |
+| Route tests | Vitest with mocked Prisma and fetch | Verifies the run route's control flow, persisted statuses, errors, diffs, and structured logs without using a real database or network request. |
+| Browser E2E | Playwright with PostgreSQL | Runs the saved v1-to-v2 workflow through Chromium against the Next.js application and an isolated PostgreSQL database in CI. |
+| Continuous integration | GitHub Actions | Runs Vitest, ESLint, the production build, and Playwright on clean machines for pushes and pull requests. |
+| Production verification | Vercel runtime and logs | Manually confirms that the deployed application loads, reaches the production database, and produces no new connection warnings. |
+
 ## Change Classification
 
 Breaking changes:
