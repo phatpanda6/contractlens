@@ -125,3 +125,34 @@ test("shows a failing check for the breaking v2 response", async ({ page }) => {
 
   await expect(latestCheck.getByText("Fail", { exact: true })).toBeVisible();
 });
+
+test("shows the server validation message when endpoint save is rejected", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const urlInput = page.getByLabel("Endpoint URL");
+  const saveButton = page.getByRole("button", {
+    name: "Save endpoint",
+  });
+  const runButton = page.getByRole("button", {
+    name: "Run check",
+  });
+
+  const originalUrl = await urlInput.inputValue();
+
+  await urlInput.fill("http://example.com");
+  await saveButton.click();
+
+  const endpointAlert = page.getByRole("main").getByRole("alert");
+
+  await expect(endpointAlert).toHaveText(
+    "External endpoint URL must use HTTPS",
+  );
+
+  await expect(runButton).toBeDisabled();
+
+  await page.reload();
+
+  await expect(urlInput).toHaveValue(originalUrl);
+});
