@@ -61,7 +61,23 @@ export function EndpointConfigForm({
       });
 
       if (!response.ok) {
-        throw new Error("The endpoint could not be updated");
+        let errorMessage = "The endpoint could not be updated";
+
+        try {
+          const errorBody: unknown = await response.json();
+
+          if (
+            typeof errorBody === "object" &&
+            errorBody !== null &&
+            "error" in errorBody &&
+            typeof errorBody.error === "string"
+          ) {
+            errorMessage = errorBody.error;
+          }
+        } catch {
+          // Keep the generic fallback when the response body is not valid JSON.
+        }
+        throw new Error(errorMessage);
       }
 
       setName(trimmedName);
@@ -72,7 +88,12 @@ export function EndpointConfigForm({
       router.refresh();
     } catch (caughtError) {
       console.error("could not update endpoint", caughtError);
-      setError("The endpoint could not be updated");
+
+      if (caughtError instanceof Error) {
+        setError(caughtError.message);
+      } else {
+        setError("The endpoint could not be updated");
+      }
     } finally {
       setIsSaving(false);
     }
