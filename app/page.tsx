@@ -98,7 +98,23 @@ export default async function Home() {
     },
   });
 
-  const activeEndpoint = project?.endpoints[0] ?? null;
+  if (project === null) {
+    return (
+      <main className="min-h-screen bg-stone-50 px-6 py-16 text-stone-950">
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-6 rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Demo data unavailable
+          </h1>
+          <p className="text-sm leading-6 text-stone-500">
+            ContractLens loaded, but the seeded demo project could not be found.
+            Please try again later.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const activeEndpoint = project.endpoints[0] ?? null;
   const recentRuns = activeEndpoint?.testRuns ?? [];
   const latestRun = recentRuns[0] ?? null;
 
@@ -184,21 +200,15 @@ export default async function Home() {
                 Configured endpoints
               </p>
 
-              {project !== null && (
-                <p className="text-xs text-stone-500">
-                  Project:
-                  <span className="ml-1 font-medium text-stone-700">
-                    {project.name}
-                  </span>
-                </p>
-              )}
+              <p className="text-xs text-stone-500">
+                Project:
+                <span className="ml-1 font-medium text-stone-700">
+                  {project.name}
+                </span>
+              </p>
             </div>
 
-            {project === null ? (
-              <p className="mt-4 text-sm text-stone-500">
-                Demo project not found.
-              </p>
-            ) : project.endpoints.length === 0 ? (
+            {project.endpoints.length === 0 ? (
               <p className="mt-4 text-sm text-stone-500">
                 No endpoints configured yet.
               </p>
