@@ -115,12 +115,29 @@ export default async function Home() {
   }
 
   const activeEndpoint = project.endpoints[0] ?? null;
-  const recentRuns = activeEndpoint?.testRuns ?? [];
+
+  if (activeEndpoint === null) {
+    return (
+      <main className="min-h-screen bg-stone-50 px-6 py-16 text-stone-950">
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-6 rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Demo endpoint unavailable
+          </h1>
+          <p className="text-sm leading-6 text-stone-500">
+            ContractLens loaded the Demo Project, but no endpoint was found.
+            Please try again later.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const recentRuns = activeEndpoint.testRuns;
   const latestRun = recentRuns[0] ?? null;
 
   const persistedPanels = {
-    baselineResponse: activeEndpoint?.baselineExample ?? null,
-    baselineSchema: activeEndpoint?.baselineSchema ?? null,
+    baselineResponse: activeEndpoint.baselineExample ?? null,
+    baselineSchema: activeEndpoint.baselineSchema ?? null,
     latestResponse: latestRun?.responseBody ?? null,
     latestSchema: latestRun?.detectedSchema ?? null,
   };
@@ -208,41 +225,33 @@ export default async function Home() {
               </p>
             </div>
 
-            {project.endpoints.length === 0 ? (
-              <p className="mt-4 text-sm text-stone-500">
-                No endpoints configured yet.
-              </p>
-            ) : (
-              <div className="mt-4 space-y-4">
-                {project.endpoints.map((savedEndpoint) => (
-                  <div
-                    className="space-y-2 border-t border-stone-100 pt-4 first:border-t-0 first:pt-0"
-                    key={savedEndpoint.id}
-                  >
-                    <p className="font-semibold text-stone-900">
-                      {savedEndpoint.name}
-                    </p>
+            <div className="mt-4 space-y-4">
+              {project.endpoints.map((savedEndpoint) => (
+                <div
+                  className="space-y-2 border-t border-stone-100 pt-4 first:border-t-0 first:pt-0"
+                  key={savedEndpoint.id}
+                >
+                  <p className="font-semibold text-stone-900">
+                    {savedEndpoint.name}
+                  </p>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded bg-emerald-100 px-2 py-1 font-mono text-xs font-semibold uppercase text-emerald-700">
-                        {savedEndpoint.method}
-                      </span>
-                      <code className="break-all text-sm text-stone-700">
-                        {savedEndpoint.url}
-                      </code>
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded bg-emerald-100 px-2 py-1 font-mono text-xs font-semibold uppercase text-emerald-700">
+                      {savedEndpoint.method}
+                    </span>
+                    <code className="break-all text-sm text-stone-700">
+                      {savedEndpoint.url}
+                    </code>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
 
-            {activeEndpoint !== null && (
-              <EndpointConfigForm
-                endpointId={activeEndpoint.id}
-                initialName={activeEndpoint.name}
-                initialUrl={activeEndpoint.url}
-              />
-            )}
+            <EndpointConfigForm
+              endpointId={activeEndpoint.id}
+              initialName={activeEndpoint.name}
+              initialUrl={activeEndpoint.url}
+            />
           </div>
 
           <div className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
