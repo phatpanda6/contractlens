@@ -45,7 +45,7 @@ test("requires endpoint changes to be saved before running a check", async ({
   await expect(unsavedMessage).toBeHidden();
 });
 
-test("shows a failing check for the breaking v2 response", async ({ page }) => {
+test("accepts a failing run as the new baseline", async ({ page }) => {
   await page.goto("/");
 
   const urlInput = page.getByLabel("Endpoint URL");
@@ -121,9 +121,45 @@ test("shows a failing check for the breaking v2 response", async ({ page }) => {
 
   await expect(changesCard.getByText("3", { exact: true })).toBeVisible();
 
-  const latestCheck = recentChecksSection.getByRole("listitem").first();
+  const recentChecks = recentChecksSection.getByRole("listitem");
 
-  await expect(latestCheck.getByText("Fail", { exact: true })).toBeVisible();
+  await expect(
+    recentChecks.nth(0).getByText("Fail", { exact: true }),
+  ).toBeVisible();
+
+  const acceptBaselineButton = detectedChangesSection.getByRole("button", {
+    name: "Accept as new baseline",
+  });
+
+  await expect(acceptBaselineButton).toBeVisible();
+
+  await acceptBaselineButton.click();
+
+  await expect(page.getByRole("status")).toHaveText(
+    "Baseline updated. Run another check to verify it.",
+  );
+
+  await expect(statusCard.getByText("Fail", { exact: true })).toBeVisible();
+
+  await runButton.click();
+
+  await expect(statusCard.getByText("Pass", { exact: true })).toBeVisible();
+
+  await expect(changesCard.getByText("0", { exact: true })).toBeVisible();
+
+  await expect(
+    detectedChangesSection.getByText("No schema changes detected.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  await expect(
+    recentChecks.nth(0).getByText("Pass", { exact: true }),
+  ).toBeVisible();
+
+  await expect(
+    recentChecks.nth(1).getByText("Fail", { exact: true }),
+  ).toBeVisible();
 });
 
 test("shows the server validation message when endpoint save is rejected", async ({

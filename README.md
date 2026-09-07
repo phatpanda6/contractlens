@@ -41,13 +41,16 @@ The key product difference is automatic baseline capture from a live response. C
 To try the breaking-change workflow:
 
 1. Enter `/api/demo/products/v1` in **Endpoint URL**, then click **Save endpoint** and **Run check**.
-2. Confirm that the status is `Pass` and **Changes Found** is `0`.
-3. Change **Endpoint URL** to `/api/demo/products/v2`, then click **Save endpoint** and **Run check** again.
-4. Confirm that the status is `Fail` and **Changes Found** is `3`. The detected changes should include:
+2. If the shared demo currently uses a different baseline, click **Accept as new baseline** and run `/v1` again.
+3. Confirm that the status is `Pass` and **Changes Found** is `0`.
+4. Change **Endpoint URL** to `/api/demo/products/v2`, then click **Save endpoint** and **Run check** again.
+5. Confirm that the status is `Fail` and **Changes Found** is `3`. The detected changes should include:
 
    - `price` changed from number to string
    - `title` is missing
    - `name` was added
+6. Click **Accept as new baseline** after reviewing the detected changes.
+7. Confirm that the existing failed check remains in the history, then click **Run check** again. The new check should pass with `0` changes because `/v2` is now the expected contract.
 
 ## Current Status
 
@@ -69,10 +72,12 @@ What works today:
   have a timeout and response-size limit.
 - The homepage reads the demo project, endpoint configuration, latest result,
   response data, and five most recent checks from PostgreSQL.
+- A reviewed PASS or FAIL result can be explicitly accepted as the new baseline
+  without rewriting the status of earlier checks.
 - GitHub Actions runs Vitest, ESLint, the production build, and Playwright on
   pushes and pull requests.
 - Playwright uses an isolated PostgreSQL service in CI and covers the persisted
-  v1 baseline -> v2 FAIL journey through Chromium.
+  v1 PASS -> v2 FAIL -> accept v2 -> v2 PASS journey through Chromium.
 - Every persisted endpoint run emits a structured summary containing its run ID,
   endpoint ID, status, duration, and diff count.
 
@@ -211,6 +216,20 @@ Browser
   -> Dashboard renders the status, differences, and history
 ```
 
+### Baseline-acceptance request flow
+
+Baseline changes are explicit. ContractLens does not automatically replace the
+expected contract when a check fails.
+
+```text
+Browser sends the reviewed TestRun ID
+  -> Baseline route verifies the run belongs to the endpoint
+  -> Route copies the stored response and detected schema to the endpoint
+  -> Previous TestRun records remain unchanged
+  -> Client refreshes the dashboard
+  -> A new check compares against the accepted baseline
+```
+
 ## Engineering Trade-offs
 
 ContractLens intentionally keeps the MVP narrow. These decisions balance
@@ -236,7 +255,7 @@ part of the system.
 | --- | --- | --- |
 | Unit tests | Vitest | Exercises the pure schema engine and HTTP safety helpers with focused inputs and expected outputs. |
 | Route tests | Vitest with mocked Prisma and fetch | Verifies the run route's control flow, persisted statuses, errors, diffs, and structured logs without using a real database or network request. |
-| Browser E2E | Playwright with PostgreSQL | Runs the saved v1-to-v2 workflow through Chromium against the Next.js application and an isolated PostgreSQL database in CI. |
+| Browser E2E | Playwright with PostgreSQL | Runs the v1 PASS, v2 FAIL, explicit baseline acceptance, and v2 PASS workflow through Chromium against an isolated PostgreSQL database locally and in CI. |
 | Continuous integration | GitHub Actions | Runs Vitest, ESLint, the production build, and Playwright on clean machines for pushes and pull requests. |
 | Production verification | Vercel runtime and logs | Manually confirms that the deployed application loads, reaches the production database, and produces no new connection warnings. |
 
@@ -306,6 +325,17 @@ Install the Chromium browser used by Playwright:
 npx playwright install chromium
 ```
 
+Create the isolated local database used by Playwright:
+
+```bash
+createdb contractlens_e2e
+cp .env.e2e.example .env.e2e
+```
+
+Replace `YOUR_POSTGRES_USER` in `.env.e2e` with your local PostgreSQL user.
+Playwright refuses to start unless `DATABASE_URL` points to a database named
+`contractlens_e2e`.
+
 Run the development server:
 
 ```bash
@@ -323,6 +353,10 @@ Run browser end-to-end tests:
 ```bash
 npm run test:e2e
 ```
+
+This command resets `contractlens_e2e`, applies all migrations, seeds the demo
+data, and starts its own application server at `127.0.0.1:3100`. Stop any
+development server running from this checkout before starting the E2E suite.
 
 Run tests in watch mode:
 

@@ -2,6 +2,7 @@ import { formatDiff, type SchemaDiff } from "@/lib/contractlens";
 import { prisma } from "@/lib/prisma";
 import { connection } from "next/server";
 import { EndpointConfigForm } from "./endpoint-config-form";
+import { AcceptBaselineButton } from "./accept-baseline-button";
 
 function isSchemaDiff(value: unknown): value is SchemaDiff {
   if (typeof value !== "object" || value === null) {
@@ -305,6 +306,15 @@ export default async function Home() {
               ))}
             </ul>
           )}
+
+          {latestRun !== null &&
+            latestMessages !== null &&
+            latestMessages.length > 0 && (
+              <AcceptBaselineButton
+                endpointId={activeEndpoint.id}
+                testRunId={latestRun.id}
+              />
+            )}
         </section>
 
         <section className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
