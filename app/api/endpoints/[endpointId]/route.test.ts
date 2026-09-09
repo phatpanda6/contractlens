@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATCH } from "./route";
 
 const prismaMocks = vi.hoisted(() => ({
@@ -19,6 +19,10 @@ describe("PATCH /api/endpoints/[endpointId]", () => {
   beforeEach(() => {
     prismaMocks.findEndpoint.mockReset();
     prismaMocks.updateEndpoint.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("returns 400 for malformed JSON without accessing the database", async () => {
@@ -209,6 +213,38 @@ describe("PATCH /api/endpoints/[endpointId]", () => {
 
     expect(responseBody).toEqual({
       error: "External endpoint URL must use HTTPS",
+    });
+
+    expect(prismaMocks.findEndpoint).not.toHaveBeenCalled();
+    expect(prismaMocks.updateEndpoint).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for an external HTTPS URL in hosted mode without accessing the database", async () => {
+    vi.stubEnv("HOSTED_DEMO_MODE", "true");
+    const request = new Request(
+      "http://localhost:3000/api/endpoints/endpoint-1",
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "Demo Products API",
+          url: "https://api.example.com/products",
+        }),
+      },
+    );
+
+    const response = await PATCH(request, {
+      params: Promise.resolve({ endpointId: "endpoint-1" }),
+    });
+
+    expect(response.status).toBe(400);
+
+    const responseBody = await response.json();
+
+    expect(responseBody).toEqual({
+      error: "Hosted demo only allows approved ContractLens demo endpoints",
     });
 
     expect(prismaMocks.findEndpoint).not.toHaveBeenCalled();
