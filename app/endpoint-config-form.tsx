@@ -8,12 +8,14 @@ type EndpointConfigFormProps = {
   endpointId: string;
   initialName: string;
   initialUrl: string;
+  isHostedDemoMode: boolean;
 };
 
 export function EndpointConfigForm({
   endpointId,
   initialName,
   initialUrl,
+  isHostedDemoMode,
 }: EndpointConfigFormProps) {
   const router = useRouter();
 
@@ -142,6 +144,9 @@ export function EndpointConfigForm({
           id="endpoint-url"
           type="text"
           name="url"
+          aria-describedby={
+            isHostedDemoMode ? "endpoint-url-guidance" : undefined
+          }
           value={url}
           onChange={(event) => {
             setUrl(event.target.value);
@@ -149,6 +154,16 @@ export function EndpointConfigForm({
           }}
           className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
         />
+        {isHostedDemoMode && (
+          <p
+            id="endpoint-url-guidance"
+            className="text-sm leading-5 text-stone-500"
+          >
+            Hosted demo: use <code>/api/demo/products/v1</code> or{" "}
+            <code>/api/demo/products/v2</code>. Local and self-hosted
+            installations can check supported public HTTPS JSON endpoints.
+          </p>
+        )}
       </div>
 
       <button
