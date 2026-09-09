@@ -180,6 +180,16 @@ export default async function Home() {
 
   const latestDiffCount = latestDiffs === null ? null : latestDiffs.length;
 
+  const breakingChangeCount =
+    latestDiffs === null
+      ? null
+      : latestDiffs.filter((diff) => diff.severity === "breaking").length;
+
+  const informationalChangeCount =
+    latestDiffs === null
+      ? null
+      : latestDiffs.filter((diff) => diff.severity === "info").length;
+
   let unavailableReason: string | null = null;
 
   if (latestRun === null) {
@@ -192,7 +202,13 @@ export default async function Home() {
     unavailableReason = "Result unavailable";
   }
 
-  const latestMessages = latestDiffs === null ? null : formatDiff(latestDiffs);
+  const latestChanges =
+    latestDiffs === null
+      ? null
+      : latestDiffs.map((diff) => ({
+          diff,
+          message: formatDiff([diff])[0],
+        }));
 
   return (
     <main className="min-h-screen bg-stone-50 px-6 py-10 text-stone-950">
@@ -281,6 +297,18 @@ export default async function Home() {
             {unavailableReason !== null && (
               <p className="mt-1 text-xs text-stone-500">{unavailableReason}</p>
             )}
+            {breakingChangeCount !== null &&
+              informationalChangeCount !== null && (
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                  <span className="rounded-full bg-red-50 px-2.5 py-1 text-red-700">
+                    Breaking: {breakingChangeCount}
+                  </span>
+
+                  <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">
+                    Informational: {informationalChangeCount}
+                  </span>
+                </div>
+              )}
           </div>
         </section>
 
@@ -289,30 +317,43 @@ export default async function Home() {
           <p className="mt-1 text-sm text-stone-500">
             Breaking changes are marked by the deterministic schema engine.
           </p>
-          {latestMessages === null ? (
+          {latestChanges === null ? (
             <p className="mt-6 text-sm text-stone-500">
               {unavailableReason ?? "Comparison unavailable."}
             </p>
-          ) : latestMessages.length === 0 ? (
+          ) : latestChanges.length === 0 ? (
             <p className="mt-6 text-sm text-stone-500">
               No schema changes detected.
             </p>
           ) : (
             <ul className="mt-6 space-y-3">
-              {latestMessages.map((message) => (
-                <li
-                  className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 font-mono text-sm"
-                  key={message}
-                >
-                  {message}
-                </li>
-              ))}
+              {latestChanges.map(({ diff, message }) => {
+                const isBreaking = diff.severity === "breaking";
+
+                return (
+                  <li
+                    className="flex flex-col gap-2 rounded-md border border-stone-200 bg-stone-50 px-4 py-3 sm:flex-row sm:items-center"
+                    key={`${diff.type}-${diff.path}`}
+                  >
+                    <span
+                      className={`self-start shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold sm:self-auto ${
+                        isBreaking
+                          ? "bg-red-50 text-red-700"
+                          : "bg-sky-50 text-sky-700"
+                      }`}
+                    >
+                      {isBreaking ? "Breaking" : "Informational"}
+                    </span>
+                    <span className="font-mono text-sm">{message}</span>
+                  </li>
+                );
+              })}
             </ul>
           )}
 
           {latestRun !== null &&
-            latestMessages !== null &&
-            latestMessages.length > 0 && (
+            latestChanges !== null &&
+            latestChanges.length > 0 && (
               <AcceptBaselineButton
                 endpointId={activeEndpoint.id}
                 testRunId={latestRun.id}
