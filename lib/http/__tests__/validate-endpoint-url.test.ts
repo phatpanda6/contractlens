@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { validateEndpointUrl } from "../validate-endpoint-url";
 
 const { lookupMock } = vi.hoisted(() => ({
@@ -13,6 +13,10 @@ describe("validateEndpointUrl", () => {
   beforeEach(() => {
     lookupMock.mockReset();
     lookupMock.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("allows a relative ContractLens demo route", async () => {
@@ -40,6 +44,50 @@ describe("validateEndpointUrl", () => {
     const result = await validateEndpointUrl(endpointUrl, requestUrl);
 
     expect(result.href).toBe(endpointUrl);
+  });
+
+  it("rejects an external HTTPS endpoint in hosted demo mode", async () => {
+    vi.stubEnv("HOSTED_DEMO_MODE", "true");
+
+    const endpointUrl = "https://api.example.com/products";
+    const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
+
+    await expect(validateEndpointUrl(endpointUrl, requestUrl)).rejects.toThrow(
+      "Hosted demo only allows approved ContractLens demo endpoints",
+    );
+  });
+
+  it("allows an approved demo endpoint in hosted demo mode", async () => {
+    vi.stubEnv("HOSTED_DEMO_MODE", "true");
+
+    const endpointUrl = "/api/demo/products/v1";
+    const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
+
+    const result = await validateEndpointUrl(endpointUrl, requestUrl);
+
+    expect(result.href).toBe("http://localhost:3000/api/demo/products/v1");
+  });
+
+  it("allows the v2 demo endpoint in hosted demo mode", async () => {
+    vi.stubEnv("HOSTED_DEMO_MODE", "true");
+
+    const endpointUrl = "/api/demo/products/v2";
+    const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
+
+    const result = await validateEndpointUrl(endpointUrl, requestUrl);
+
+    expect(result.href).toBe("http://localhost:3000/api/demo/products/v2");
+  });
+
+  it("rejects an unapproved demo fixture in the hosted demo mode", async () => {
+    vi.stubEnv("HOSTED_DEMO_MODE", "true");
+
+    const endpointUrl = "/api/demo/products/slow";
+    const requestUrl = "http://localhost:3000/api/endpoints/endpoint-1/run";
+
+    await expect(validateEndpointUrl(endpointUrl, requestUrl)).rejects.toThrow(
+      "Hosted demo only allows approved ContractLens demo endpoints",
+    );
   });
 
   it("rejects an absolute HTTP endpoint", async () => {

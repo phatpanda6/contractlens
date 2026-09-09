@@ -34,6 +34,7 @@ describe("POST /api/endpoints/[endpointId]/run", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("persists FAIL when the latest response contains breaking schema changes", async () => {
@@ -254,6 +255,46 @@ describe("POST /api/endpoints/[endpointId]/run", () => {
         diffCount: 0,
       }),
     );
+  });
+
+  it("persists ERROR without fetching when a stored external URL is run in hosted demo mode", async () => {
+    vi.stubEnv("HOSTED_DEMO_MODE", "true");
+
+    vi.spyOn(console, "info").mockImplementation(() => {});
+
+    prismaMocks.findUnique.mockResolvedValue({
+      id: "endpoint-1",
+      method: "GET",
+      url: "https://api.example.com/products",
+      baselineSchema: null,
+    });
+
+    prismaMocks.createTestRun.mockResolvedValue({
+      id: "run-1",
+      endpointId: "endpoint-1",
+      status: "ERROR",
+    });
+
+    const request = new Request(
+      "http://localhost:3000/api/endpoints/endpoint-1/run",
+      { method: "POST" },
+    );
+
+    await POST(request, {
+      params: Promise.resolve({ endpointId: "endpoint-1" }),
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    expect(prismaMocks.createTestRun).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        endpointId: "endpoint-1",
+        status: "ERROR",
+        errorMessage:
+          "Hosted demo only allows approved ContractLens demo endpoints",
+      }),
+    });
+
   });
 
   it("logs a structured summary when the response is not JSON", async () => {

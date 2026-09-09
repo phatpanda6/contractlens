@@ -1,6 +1,11 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
+const HOSTED_DEMO_MODE_ALLOWED_PATHS = new Set([
+  "/api/demo/products/v1",
+  "/api/demo/products/v2",
+]);
+
 function assertSafeIpAddress(ipAddress: string): void {
   const isIpv4Address = isIP(ipAddress) === 4;
   const targetsIpv4Loopback = isIpv4Address && ipAddress.startsWith("127.");
@@ -179,6 +184,18 @@ export async function validateEndpointUrl(
   }
 
   const isExternalUrl = !isRelativeUrl;
+
+  const isHostedDemoMode = process.env.HOSTED_DEMO_MODE === "true";
+
+  const isApprovedHostedDemoEndpoint =
+    isRelativeUrl && HOSTED_DEMO_MODE_ALLOWED_PATHS.has(resolvedUrl.pathname);
+
+  if (isHostedDemoMode && !isApprovedHostedDemoEndpoint) {
+    throw new Error(
+      "Hosted demo only allows approved ContractLens demo endpoints",
+    );
+  }
+
   const usesHttps = resolvedUrl.protocol === "https:";
 
   if (isExternalUrl && !usesHttps) {

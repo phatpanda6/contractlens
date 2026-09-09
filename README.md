@@ -38,6 +38,10 @@ The key product difference is automatic baseline capture from a live response. C
 
 [Open the deployed ContractLens demo](https://contractlens-iota.vercel.app/)
 
+The hosted demo accepts only the built-in `/api/demo/products/v1` and
+`/api/demo/products/v2` routes. Local and self-hosted installations can also
+check validated public HTTPS endpoints.
+
 To try the breaking-change workflow:
 
 1. Enter `/api/demo/products/v1` in **Endpoint URL**, then click **Save endpoint** and **Run check**.
@@ -67,9 +71,10 @@ What works today:
   informational changes.
 - The endpoint run route saves baselines, PASS/FAIL results, response schemas,
   readable diffs, and useful error records.
-- External endpoint requests are limited to validated public HTTPS URLs. Private
-  and loopback targets are blocked, redirects are checked again, and requests
-  have a timeout and response-size limit.
+- Local and self-hosted installations can check validated public HTTPS URLs.
+  Private and loopback targets are blocked, redirects are checked again, and
+  requests have a timeout and response-size limit. The public hosted demo is
+  restricted to its two built-in demo routes.
 - The homepage reads the demo project, endpoint configuration, latest result,
   response data, and five most recent checks from PostgreSQL.
 - A reviewed PASS or FAIL result can be explicitly accepted as the new baseline
@@ -83,7 +88,8 @@ What works today:
 
 Still to do:
 
-- Polish the main demo's error, empty, loading, and accessibility states.
+- Complete a targeted keyboard, visible-focus, screen-reader announcement,
+  narrow-viewport, long-JSON, and slow/failing-operation audit.
 - Add a CLI after the web workflow is settled.
 - Add AI explanations without giving AI control over PASS/FAIL.
 
@@ -286,6 +292,11 @@ This keeps correctness in code and uses AI for communication.
   have no known item shape, and heterogeneous arrays are not fully represented.
 - The current UI is centred on the seeded Demo Project and its first endpoint;
   project creation and endpoint selection are not part of this demo yet.
+- The public hosted demo accepts only `/api/demo/products/v1` and
+  `/api/demo/products/v2`. Local and self-hosted installations can use validated
+  public HTTPS endpoints.
+- Visitors to the public demo share its endpoint configuration, baseline, and
+  check history, so another visitor can change what is currently displayed.
 - The dashboard shows the five most recent checks rather than an unbounded
   history.
 - Endpoint checks require JSON responses and use a five-second timeout and a
@@ -319,6 +330,37 @@ Install dependencies:
 npm install
 ```
 
+Create the PostgreSQL database used by the application and copy the safe
+configuration template:
+
+```bash
+createdb contractlens
+cp .env.example .env
+```
+
+Replace `YOUR_POSTGRES_USER` in `.env` with your local PostgreSQL user. The
+private `.env` file is ignored by Git; `.env.example` documents the required
+variables without containing real credentials.
+
+Leave `HOSTED_DEMO_MODE="false"` for local or self-hosted use. In this mode,
+ContractLens can check supported public HTTPS endpoints after applying its
+existing URL-safety rules. Set it to `"true"` only for the public hosted demo,
+where requests are restricted to `/api/demo/products/v1` and
+`/api/demo/products/v2`.
+
+Apply the existing migrations and seed the Demo Project:
+
+```bash
+npx prisma migrate deploy
+npm run db:seed
+```
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
 Install the Chromium browser used by Playwright:
 
 ```bash
@@ -335,12 +377,6 @@ cp .env.e2e.example .env.e2e
 Replace `YOUR_POSTGRES_USER` in `.env.e2e` with your local PostgreSQL user.
 Playwright refuses to start unless `DATABASE_URL` points to a database named
 `contractlens_e2e`.
-
-Run the development server:
-
-```bash
-npm run dev
-```
 
 Run tests:
 
@@ -372,7 +408,8 @@ npm run lint
 
 ## Roadmap
 
-1. Polish the main demo's error, empty, loading, and accessibility states.
+1. Complete a targeted keyboard, visible-focus, screen-reader announcement,
+   narrow-viewport, long-JSON, and slow/failing-operation audit.
 2. Consider a minimal CLI with readable diffs and exit code `1` for breaking
    changes.
 3. Add AI explanations only after the deterministic result is already known.

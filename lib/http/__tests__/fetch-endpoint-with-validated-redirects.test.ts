@@ -14,6 +14,7 @@ describe("fetchEndpointWithValidatedRedirects", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("blocks a redirect to an IPv4 loopback address", async () => {
@@ -40,6 +41,37 @@ describe("fetchEndpointWithValidatedRedirects", () => {
 
     await expect(responsePromise).rejects.toThrow(
       "External endpoint URL must not target an IPv4 loopback address",
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks a redirect from an approved demo route to an external URL in hosted demo mode", async () => {
+    vi.stubEnv("HOSTED_DEMO_MODE", "true");
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(null, {
+        status: 302,
+        headers: {
+          Location: "https://api.example.com/products",
+        },
+      }),
+    );
+
+    const endpointUrl = "/api/demo/products/v1";
+    const requestUrl = "http://localhost:3000/api/endpoints/example/run";
+
+    const responsePromise = fetchEndpointWithValidatedRedirects(
+      endpointUrl,
+      requestUrl,
+    );
+
+    await expect(responsePromise).rejects.toBeInstanceOf(
+      EndpointFetchPolicyError,
+    );
+
+    await expect(responsePromise).rejects.toThrow(
+      "Hosted demo only allows approved ContractLens demo endpoints",
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
