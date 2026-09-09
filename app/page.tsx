@@ -64,6 +64,8 @@ const melbourneDateTimeFormatter = new Intl.DateTimeFormat("en-AU", {
 export default async function Home() {
   await connection();
 
+  const isHostedDemoMode = process.env.HOSTED_DEMO_MODE === "true";
+
   const project = await prisma.project.findFirst({
     where: {
       name: "Demo Project",
@@ -252,6 +254,7 @@ export default async function Home() {
               endpointId={activeEndpoint.id}
               initialName={activeEndpoint.name}
               initialUrl={activeEndpoint.url}
+              isHostedDemoMode={isHostedDemoMode}
             />
           </div>
 
