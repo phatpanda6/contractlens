@@ -868,6 +868,7 @@ h1 {
 }
 .history-list .status-badge {
   justify-self: start;
+  min-width: 3rem;
 }
 .history-target {
   color: #58666e;
