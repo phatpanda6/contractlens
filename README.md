@@ -44,17 +44,29 @@ check validated public HTTPS endpoints.
 
 To try the breaking-change workflow:
 
-1. Enter `/api/demo/products/v1` in **Endpoint URL**, then click **Save endpoint** and **Run check**.
+1. Choose **Original response v1**, then click **Run check**. The version shortcuts save the target; **Edit endpoint** opens the full configuration form.
 2. If the shared demo currently uses a different baseline, click **Accept as new baseline** and run `/v1` again.
-3. Confirm that the status is `Pass` and **Changes Found** is `0`.
-4. Change **Endpoint URL** to `/api/demo/products/v2`, then click **Save endpoint** and **Run check** again.
-5. Confirm that the status is `Fail` and **Changes Found** is `3`. The detected changes should include:
+3. Confirm that the latest recorded check is `Pass` with `0 changes found`.
+4. Choose **Changed response v2**, then click **Run check** again.
+5. Confirm that the latest recorded check is `Fail` with `3 changes found`. The detected changes should include:
 
    - `price` changed from number to string
    - `title` is missing
    - `name` was added
 6. Click **Accept as new baseline** after reviewing the detected changes.
 7. Confirm that the existing failed check remains in the history, then click **Run check** again. The new check should pass with `0` changes because `/v2` is now the expected contract.
+
+The comparison workspace places detected changes directly above the saved
+baseline and latest recorded response. Use the **Response / Schema** switch to
+inspect either view. On smaller screens, changes become stacked cards and the
+response panels stack vertically. Long JSON scrolls within each panel; previews
+are limited to 200 lines and 2,000 characters per line.
+
+Each new check records its target URL. Editing an endpoint keeps the old result
+and shows a warning until the target matches or a new check is run. Older checks
+without a recorded target are labelled explicitly. The table describes the
+baseline **at the time of the check**; the baseline JSON panel shows the **current
+saved contract**, which can change after acceptance.
 
 ## Current Status
 
@@ -76,7 +88,11 @@ What works today:
   requests have a timeout and response-size limit. The public hosted demo is
   restricted to its two built-in demo routes.
 - The homepage reads the demo project, endpoint configuration, latest result,
-  response data, and five most recent checks from PostgreSQL.
+  response data, and five most recent checks from PostgreSQL. Database access
+  stays in the server page; the interactive dashboard receives that saved data.
+- Save, run, and acceptance controls coordinate their pending state until the
+  saved API result is displayed. Unsaved edits block running a check, and a result from a
+  different target cannot be accepted through the dashboard.
 - A reviewed PASS or FAIL result can be explicitly accepted as the new baseline
   without rewriting the status of earlier checks.
 - GitHub Actions runs Vitest, ESLint, the production build, and Playwright on
@@ -217,9 +233,9 @@ Browser
   -> Core engine infers the schema and compares it when a baseline exists
   -> Prisma saves the TestRun in PostgreSQL
   -> Route writes a structured log and returns a response
-  -> Client calls router.refresh()
-  -> Server Component reads the persisted result from PostgreSQL
-  -> Dashboard renders the status, differences, and history
+  -> Client validates and renders the persisted result returned by the API
+  -> Dashboard updates status, differences, and history together
+  -> Reloading reads the saved state from PostgreSQL again
 ```
 
 ### Baseline-acceptance request flow
@@ -232,7 +248,7 @@ Browser sends the reviewed TestRun ID
   -> Baseline route verifies the run belongs to the endpoint
   -> Route copies the stored response and detected schema to the endpoint
   -> Previous TestRun records remain unchanged
-  -> Client refreshes the dashboard
+  -> Client displays the saved baseline returned by the API
   -> A new check compares against the accepted baseline
 ```
 

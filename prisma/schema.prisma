@@ -44,6 +44,7 @@ model TestRun {
   id             String        @id @default(cuid())
   endpointId     String
   endpoint       Endpoint      @relation(fields: [endpointId], references: [id])
+  targetUrl      String?
   status         TestRunStatus
   responseBody   Json?
   detectedSchema Json?

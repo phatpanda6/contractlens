@@ -1,76 +1,89 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-type AcceptBaselineButtonProps = {
-  endpointId: string;
-  testRunId: string;
-};
+import { useEndpointActions } from "./endpoint-actions";
+import { UiIcon } from "./ui-icon";
 
 export function AcceptBaselineButton({
   endpointId,
   testRunId,
-}: AcceptBaselineButtonProps) {
-  const router = useRouter();
-
-  const [isAccepting, setIsAccepting] = useState(false);
+  hasDifferentTarget,
+}: {
+  endpointId: string;
+  testRunId: string;
+  hasDifferentTarget: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { pendingAction, hasUnsavedChanges, performAction } =
+    useEndpointActions();
+  const isAccepting = pendingAction === "accept";
 
-  async function handleAccept() {
+  function handleAccept() {
     setError(null);
     setSuccess(null);
-    setIsAccepting(true);
-
-    try {
-      const response = await fetch(`/api/endpoints/${endpointId}/baseline`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          testRunId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("The baseline could not be updated");
+    performAction("accept", async () => {
+      try {
+        const response = await fetch(`/api/endpoints/${endpointId}/baseline`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ testRunId }),
+        });
+        if (!response.ok) throw new Error("The baseline could not be updated");
+        setSuccess("Baseline updated. Run another check to verify it.");
+        return await response.json();
+      } catch (caughtError) {
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "The baseline could not be updated",
+        );
+        return null;
       }
-
-      setSuccess("Baseline updated. Run another check to verify it.");
-      router.refresh();
-    } catch (caughtError) {
-      console.error("Failed to update baseline", caughtError);
-
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "The baseline could not be updated",
-      );
-    } finally {
-      setIsAccepting(false);
-    }
+    });
   }
 
   return (
-    <div className="mt-6 border-t border-stone-100 pt-4">
+    <div className="accept-bar">
+      <div>
+        <p className="accept-title">Is this change intentional?</p>
+        <p id="accept-explanation">
+          Use this recorded response as the baseline for future checks. Previous
+          results stay unchanged.
+        </p>
+        {(hasDifferentTarget || hasUnsavedChanges) && (
+          <p className="accept-hint">
+            Save your target and run a new check before accepting a response.
+          </p>
+        )}
+      </div>
       <button
         type="button"
         onClick={handleAccept}
-        disabled={isAccepting}
+        disabled={
+          pendingAction !== null ||
+          hasDifferentTarget ||
+          hasUnsavedChanges ||
+          success !== null
+        }
         aria-busy={isAccepting}
-        className="inline-flex min-h-10 items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors enabled:hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        aria-describedby="accept-explanation"
+        className="button button-secondary"
       >
-        {isAccepting ? "Updating baseline..." : "Accept as new baseline"}
+        <UiIcon name={success ? "check" : "arrow"} />
+        {isAccepting
+          ? "Updating baseline…"
+          : success
+            ? "Baseline accepted"
+            : "Accept as new baseline"}
       </button>
       {error !== null && (
-        <p role="alert" className="mt-3 text-sm text-red-700">
+        <p role="alert" className="accept-feedback error-text">
           {error}
         </p>
       )}
       {success !== null && (
-        <p role="status" className="mt-3 text-sm text-emerald-700">
+        <p role="status" className="accept-feedback success-text">
           {success}
         </p>
       )}
