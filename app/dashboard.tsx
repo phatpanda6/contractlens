@@ -614,18 +614,35 @@ export function Dashboard({
           <div className="how-it-works-body">
             <div>
               <b>01 / Establish your baseline</b>
-              <p>
-                Choose Original response v1 and run a check. If this shared demo
-                has a different baseline, review and accept v1, then check
-                again.
-              </p>
+              {isHostedDemoMode ? (
+                <p>
+                  Choose Original response v1 and run a check. If this shared
+                  demo has a different baseline, review and accept v1, then
+                  check again.
+                </p>
+              ) : (
+                <p>
+                  Enter a public HTTPS JSON endpoint, or use Original response
+                  v1 as a practice example, then run the first check to capture
+                  its baseline.
+                </p>
+              )}
             </div>
             <div>
               <b>02 / See what breaks</b>
-              <p>
-                Choose Changed response v2 and run a check. Inspect removed
-                fields, added fields, and type changes alongside the response.
-              </p>
+              {isHostedDemoMode ? (
+                <p>
+                  Choose Changed response v2 and run a check. Inspect removed
+                  fields, added fields, and type changes alongside the response.
+                </p>
+              ) : (
+                <p>
+                  Run the saved endpoint again after its response changes, or
+                  choose Changed response v2 when practicing with the included
+                  example. Inspect the detected field and type changes alongside
+                  the response.
+                </p>
+              )}
             </div>
             <div>
               <b>03 / Accept intentionally</b>
