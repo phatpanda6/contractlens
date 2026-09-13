@@ -74,13 +74,16 @@ export function applySavedResult(
   };
   if (action === "accept") return { ...current, ...baseline };
 
-  const run = readRun(value.testRun);
-  return {
-    ...current,
-    ...baseline,
-    testRuns: [
-      run,
-      ...current.testRuns.filter((previous) => previous.id !== run.id),
-    ].slice(0, 5),
-  };
+  if (action === "run") {
+    const run = readRun(value.testRun);
+    return {
+      ...current,
+      ...baseline,
+      testRuns: [
+        run,
+        ...current.testRuns.filter((previous) => previous.id !== run.id),
+      ].slice(0, 5),
+    };
+  }
+  throw new Error("Unsupported endpoint action");
 }
