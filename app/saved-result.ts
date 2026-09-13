@@ -1,14 +1,11 @@
-import type { DashboardProject } from "./dashboard";
+import type { DashboardEndpoint, DashboardTestRun } from "./dashboard-types";
 import type { EndpointAction } from "./endpoint-actions";
-
-type Endpoint = DashboardProject["endpoints"][number];
-type Run = Endpoint["testRuns"][number];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readRun(value: unknown): Run {
+function readRun(value: unknown): DashboardTestRun {
   if (
     !isRecord(value) ||
     typeof value.id !== "string" ||
@@ -25,7 +22,7 @@ function readRun(value: unknown): Run {
   return {
     id: value.id,
     targetUrl: value.targetUrl,
-    status: value.status as Run["status"],
+    status: value.status as DashboardTestRun["status"],
     createdAt,
     responseBody: value.responseBody ?? null,
     detectedSchema: value.detectedSchema ?? null,
@@ -38,10 +35,10 @@ function readRun(value: unknown): Run {
 // Only update from a successful API response. A changed target does not rewrite
 // history, and accepting a response does not turn an old FAIL into a PASS.
 export function applySavedResult(
-  current: Endpoint,
+  current: DashboardEndpoint,
   action: EndpointAction,
   value: unknown,
-): Endpoint {
+): DashboardEndpoint {
   if (
     !isRecord(value) ||
     !isRecord(value.endpoint) ||

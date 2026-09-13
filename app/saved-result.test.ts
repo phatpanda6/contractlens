@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applySavedResult } from "./saved-result";
-import type { DashboardProject } from "./dashboard";
+import type { DashboardEndpoint } from "./dashboard-types";
 
 const failedRun = {
   id: "run-1",
@@ -20,7 +20,7 @@ const failedRun = {
   ],
   errorMessage: null,
 };
-const endpoint: DashboardProject["endpoints"][number] = {
+const endpoint: DashboardEndpoint = {
   id: "endpoint-1",
   name: "Products",
   method: "GET",

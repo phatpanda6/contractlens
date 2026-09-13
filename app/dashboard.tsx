@@ -13,29 +13,7 @@ import { applySavedResult } from "./saved-result";
 import { ResponseView } from "./response-view";
 import { JsonPanel } from "./json-panel";
 import { UiIcon } from "./ui-icon";
-
-export type DashboardProject = {
-  id: string;
-  name: string;
-  endpoints: {
-    id: string;
-    name: string;
-    method: string;
-    url: string;
-    baselineSchema: unknown;
-    baselineExample: unknown;
-    testRuns: {
-      id: string;
-      targetUrl: string | null;
-      status: "BASELINE_CREATED" | "PASS" | "FAIL" | "ERROR";
-      responseBody: unknown;
-      detectedSchema: unknown;
-      createdAt: Date;
-      diff: unknown;
-      errorMessage: string | null;
-    }[];
-  }[];
-};
+import type { DashboardProject } from "./dashboard-types";
 
 function isSchemaDiff(value: unknown): value is SchemaDiff {
   if (typeof value !== "object" || value === null) {
