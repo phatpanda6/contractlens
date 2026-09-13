@@ -13,10 +13,10 @@ function readRun(value: unknown): Run {
     !isRecord(value) ||
     typeof value.id !== "string" ||
     typeof value.createdAt !== "string" ||
+    // Runs saved before targetUrl was introduced may contain null.
     (value.targetUrl !== null && typeof value.targetUrl !== "string") ||
-    !["BASELINE_CREATED", "PASS", "FAIL", "ERROR"].includes(
-      String(value.status),
-    )
+    typeof value.status !== "string" ||
+    !["BASELINE_CREATED", "PASS", "FAIL", "ERROR"].includes(value.status)
   ) {
     throw new Error("Invalid saved check");
   }

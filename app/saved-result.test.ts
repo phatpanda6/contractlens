@@ -118,4 +118,17 @@ describe("saved dashboard results", () => {
     ).toThrow("Invalid saved endpoint");
     expect(endpoint.testRuns[0].status).toBe("FAIL");
   });
+
+  it("rejects a non-string run status", () => {
+    expect(() => {
+      applySavedResult(endpoint, "run", {
+        endpoint,
+        testRun: {
+          ...failedRun,
+          createdAt: failedRun.createdAt.toISOString(),
+          status: ["PASS"],
+        },
+      });
+    }).toThrow("Invalid saved check");
+  });
 });
