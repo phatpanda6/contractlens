@@ -85,6 +85,7 @@ export async function POST(
       const testRun = await prisma.testRun.create({
         data: {
           endpointId: endpoint.id,
+          targetUrl: endpoint.url,
           status: "ERROR",
           errorMessage,
         },
@@ -105,6 +106,7 @@ export async function POST(
       const testRun = await prisma.testRun.create({
         data: {
           endpointId: endpoint.id,
+          targetUrl: endpoint.url,
           status: "ERROR",
           errorMessage: `Endpoint returned HTTP ${response.status}`,
         },
@@ -131,6 +133,7 @@ export async function POST(
       const testRun = await prisma.testRun.create({
         data: {
           endpointId: endpoint.id,
+          targetUrl: endpoint.url,
           status: "ERROR",
           errorMessage: `Expected JSON but received ${contentType ?? "no Content-Type header"}`,
         },
@@ -170,6 +173,7 @@ export async function POST(
       const testRun = await prisma.testRun.create({
         data: {
           endpointId: endpoint.id,
+          targetUrl: endpoint.url,
           status: "ERROR",
           errorMessage,
         },
@@ -202,6 +206,7 @@ export async function POST(
       const testRun = await prisma.testRun.create({
         data: {
           endpointId: endpoint.id,
+          targetUrl: endpoint.url,
           status: "BASELINE_CREATED",
           responseBody,
           detectedSchema,
@@ -235,6 +240,7 @@ export async function POST(
     const testRun = await prisma.testRun.create({
       data: {
         endpointId: endpoint.id,
+        targetUrl: endpoint.url,
         status,
         responseBody,
         detectedSchema,

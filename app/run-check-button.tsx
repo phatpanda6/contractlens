@@ -1,64 +1,60 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-type RunCheckButtonProps = {
-  endpointId: string;
-  disabled: boolean;
-  disabledReason: string | null;
-};
+import { useEndpointActions } from "./endpoint-actions";
+import { UiIcon } from "./ui-icon";
 
 export function RunCheckButton({
   endpointId,
   disabled,
-  disabledReason,
-}: RunCheckButtonProps) {
-  const router = useRouter();
-  const [isRunning, setIsRunning] = useState(false);
+}: {
+  endpointId: string;
+  disabled: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
+  const { pendingAction, performAction } = useEndpointActions();
+  const isRunning = pendingAction === "run";
 
-  const isButtonDisabled = isRunning || disabled;
-
-  async function handleRun() {
+  function handleRun() {
     setError(null);
-    setIsRunning(true);
-
-    try {
-      const response = await fetch(`/api/endpoints/${endpointId}/run`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("The endpoint check could not be completed");
+    performAction("run", async () => {
+      try {
+        const response = await fetch(`/api/endpoints/${endpointId}/run`, {
+          method: "POST",
+        });
+        if (!response.ok)
+          throw new Error("The endpoint check could not be completed.");
+        return await response.json();
+      } catch {
+        setError(
+          "The endpoint check could not be completed. Please try again.",
+        );
+        return null;
       }
-      router.refresh();
-    } catch (caughtError) {
-      console.error("failed to check endpoint", caughtError);
-      setError("The endpoint check could not be completed.");
-    } finally {
-      setIsRunning(false);
-    }
+    });
   }
 
   return (
-    <div className="mt-4 border-t border-stone-100 pt-4">
+    <div className="run-control">
       <button
         type="button"
         onClick={handleRun}
-        disabled={isButtonDisabled}
+        disabled={disabled || pendingAction !== null}
         aria-busy={isRunning}
-        className="inline-flex min-h-10 items-center justify-center rounded-md bg-stone-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors enabled:hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        className="button button-primary"
       >
+        {isRunning ? (
+          <span className="spinner" aria-hidden="true" />
+        ) : (
+          <UiIcon name="play" />
+        )}
         {isRunning ? "Running…" : "Run check"}
       </button>
-
-      {disabled && disabledReason !== null && (
-        <p className="mt-2 text-sm text-stone-500">{disabledReason}</p>
-      )}
-
+      <span role="status" className="sr-only">
+        {isRunning ? "Checking the endpoint…" : ""}
+      </span>
       {error !== null && (
-        <p role="alert" className="mt-2 text-sm text-red-700">
+        <p role="alert" className="run-error error-text">
           {error}
         </p>
       )}

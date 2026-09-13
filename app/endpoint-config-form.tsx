@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, type SubmitEvent } from "react";
-import { useRouter } from "next/navigation";
 import { RunCheckButton } from "./run-check-button";
+import { useEndpointActions } from "./endpoint-actions";
+import { UiIcon } from "./ui-icon";
 
 type EndpointConfigFormProps = {
   endpointId: string;
   initialName: string;
   initialUrl: string;
+  method: string;
   isHostedDemoMode: boolean;
 };
 
@@ -15,176 +17,224 @@ export function EndpointConfigForm({
   endpointId,
   initialName,
   initialUrl,
+  method,
   isHostedDemoMode,
 }: EndpointConfigFormProps) {
-  const router = useRouter();
-
   const [name, setName] = useState(initialName);
   const [url, setUrl] = useState(initialUrl);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState({ name: initialName, url: initialUrl });
+  const {
+    pendingAction,
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
+    performAction,
+  } = useEndpointActions();
 
-  const [savedName, setSavedName] = useState(initialName);
-  const [savedUrl, setSavedUrl] = useState(initialUrl);
-
-  const trimmedName = name.trim();
-  const trimmedUrl = url.trim();
-  const hasEmptyField = trimmedName === "" || trimmedUrl === "";
-  const hasUnsavedChanges = name !== savedName || url !== savedUrl;
-
-  const isRunDisabled = hasUnsavedChanges || hasEmptyField || isSaving;
-
-  const runDisabledReason = hasUnsavedChanges
-    ? "Save your changes before running a check."
-    : null;
-
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setError(null);
-
-    if (hasEmptyField) {
-      setError("Name and URL cannot be empty");
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      const response = await fetch(`/api/endpoints/${endpointId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: trimmedName,
-          url: trimmedUrl,
-        }),
-      });
-
-      if (!response.ok) {
-        let errorMessage = "The endpoint could not be updated";
-
-        try {
-          const errorBody: unknown = await response.json();
-
-          if (
-            typeof errorBody === "object" &&
-            errorBody !== null &&
-            "error" in errorBody &&
-            typeof errorBody.error === "string"
-          ) {
-            errorMessage = errorBody.error;
-          }
-        } catch {
-          // Keep the generic fallback when the response body is not valid JSON.
-        }
-        throw new Error(errorMessage);
-      }
-
-      setName(trimmedName);
-      setUrl(trimmedUrl);
-      setSavedName(trimmedName);
-      setSavedUrl(trimmedUrl);
-
-      router.refresh();
-    } catch (caughtError) {
-      console.error("could not update endpoint", caughtError);
-
-      if (caughtError instanceof Error) {
-        setError(caughtError.message);
-      } else {
-        setError("The endpoint could not be updated");
-      }
-    } finally {
-      setIsSaving(false);
+  // The saved API result updates these props. Preserve an unfinished draft
+  // if the server data changes, and keep saved values separate from inputs.
+  if (saved.name !== initialName || saved.url !== initialUrl) {
+    setSaved({ name: initialName, url: initialUrl });
+    if (!hasUnsavedChanges) {
+      setName(initialName);
+      setUrl(initialUrl);
     }
   }
 
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className="mt-4 space-y-4 border-t border-stone-100 pt-4"
-    >
-      <div>
-        <p className="text-sm font-medium text-stone-900">Edit endpoint</p>
-        <p className="mt-1 text-sm text-stone-500">
-          Changing the target keeps the existing baseline.
-        </p>
-      </div>
+  const isBusy = pendingAction !== null;
+  const isSaving = pendingAction === "save";
+  const hasEmptyField = name.trim() === "" || url.trim() === "";
 
-      <div className="space-y-1.5">
-        <label
-          htmlFor="endpoint-name"
-          className="block text-sm font-medium text-stone-700"
-        >
-          Endpoint name
-        </label>
-        <input
-          id="endpoint-name"
-          type="text"
-          name="name"
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-            setError(null);
-          }}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label
-          htmlFor="endpoint-url"
-          className="block text-sm font-medium text-stone-700"
-        >
-          Endpoint URL
-        </label>
-        <input
-          id="endpoint-url"
-          type="text"
-          name="url"
-          aria-describedby={
-            isHostedDemoMode ? "endpoint-url-guidance" : undefined
+  function saveEndpoint(nextName: string, nextUrl: string) {
+    setError(null);
+    if (!nextName.trim() || !nextUrl.trim()) {
+      setError("Name and URL cannot be empty");
+      return;
+    }
+    performAction("save", async () => {
+      try {
+        const response = await fetch(`/api/endpoints/${endpointId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: nextName.trim(), url: nextUrl.trim() }),
+        });
+        if (!response.ok) {
+          let message = "The endpoint could not be updated";
+          try {
+            const body: unknown = await response.json();
+            if (
+              typeof body === "object" &&
+              body !== null &&
+              "error" in body &&
+              typeof body.error === "string"
+            )
+              message = body.error;
+          } catch {
+            /* Keep the readable fallback for a non-JSON error. */
           }
-          value={url}
-          onChange={(event) => {
-            setUrl(event.target.value);
-            setError(null);
-          }}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
-        />
-        {isHostedDemoMode && (
-          <p
-            id="endpoint-url-guidance"
-            className="text-sm leading-5 text-stone-500"
-          >
-            Hosted demo: use <code>/api/demo/products/v1</code> or{" "}
-            <code>/api/demo/products/v2</code>. Local and self-hosted
-            installations can check supported public HTTPS JSON endpoints.
-          </p>
-        )}
-      </div>
+          throw new Error(message);
+        }
+        setName(nextName.trim());
+        setUrl(nextUrl.trim());
+        setHasUnsavedChanges(false);
+        return await response.json();
+      } catch (caughtError) {
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "The endpoint could not be updated",
+        );
+        return null;
+      }
+    });
+  }
 
-      <button
-        type="submit"
-        disabled={isSaving}
-        aria-busy={isSaving}
-        className="inline-flex min-h-10 items-center justify-center rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-colors enabled:hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSaving ? "Saving…" : "Save endpoint"}
-      </button>
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    saveEndpoint(name, url);
+  }
+
+  function cancelEdit() {
+    setName(initialName);
+    setUrl(initialUrl);
+    setError(null);
+    setHasUnsavedChanges(false);
+    setIsEditing(false);
+  }
+
+  return (
+    <section className="endpoint-card" aria-label="Endpoint configuration">
+      <div className="endpoint-toolbar">
+        <div className="endpoint-identity">
+          <div className="endpoint-name">
+            <span className="method-badge">{method}</span>
+            <h2>{initialName}</h2>
+          </div>
+          <code className="endpoint-address">{initialUrl}</code>
+        </div>
+        <div
+          className="endpoint-shortcuts"
+          role="group"
+          aria-label="Choose and save a demo endpoint"
+        >
+          {(
+            [
+              ["v1", "Original response"],
+              ["v2", "Changed response"],
+            ] as const
+          ).map(([version, label]) => (
+            <button
+              type="button"
+              key={version}
+              aria-pressed={initialUrl === `/api/demo/products/${version}`}
+              disabled={isBusy || hasUnsavedChanges}
+              onClick={() =>
+                saveEndpoint(initialName, `/api/demo/products/${version}`)
+              }
+            >
+              <span>{label}</span> <code>{version}</code>
+            </button>
+          ))}
+        </div>
+        <div className="endpoint-buttons">
+          <button
+            type="button"
+            className="button button-quiet"
+            aria-expanded={isEditing}
+            aria-controls="endpoint-editor"
+            disabled={isBusy}
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            <UiIcon name="edit" />
+            Edit endpoint
+          </button>
+          <RunCheckButton
+            endpointId={endpointId}
+            disabled={hasUnsavedChanges || hasEmptyField}
+          />
+        </div>
+      </div>
+      <div id="endpoint-editor" hidden={!isEditing}>
+        <form onSubmit={handleSubmit} className="endpoint-editor">
+          <p className="editor-intro">
+            Changing the target keeps the existing baseline and check history.
+          </p>
+          <div className="field">
+            <label htmlFor="endpoint-name">Endpoint name</label>
+            <input
+              id="endpoint-name"
+              name="name"
+              value={name}
+              disabled={isBusy}
+              onChange={(event) => {
+                setName(event.target.value);
+                setHasUnsavedChanges(
+                  event.target.value !== initialName || url !== initialUrl,
+                );
+                setError(null);
+              }}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="endpoint-url">Endpoint URL</label>
+            <input
+              id="endpoint-url"
+              name="url"
+              type="text"
+              spellCheck={false}
+              autoCapitalize="none"
+              aria-describedby="endpoint-url-guidance"
+              value={url}
+              disabled={isBusy}
+              onChange={(event) => {
+                setUrl(event.target.value);
+                setHasUnsavedChanges(
+                  name !== initialName || event.target.value !== initialUrl,
+                );
+                setError(null);
+              }}
+            />
+            <p id="endpoint-url-guidance">
+              {isHostedDemoMode
+                ? "Hosted demo: use /api/demo/products/v1 or /api/demo/products/v2. Local and self-hosted installations also support public HTTPS JSON APIs."
+                : "Use a demo route or a public HTTPS endpoint that returns JSON."}
+            </p>
+          </div>
+          <div className="editor-actions">
+            <button
+              className="button button-secondary"
+              type="submit"
+              disabled={isBusy}
+              aria-busy={isSaving}
+            >
+              {isSaving ? "Saving…" : "Save endpoint"}
+            </button>
+            <button
+              className="button button-quiet"
+              type="button"
+              disabled={isBusy}
+              onClick={cancelEdit}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+      {hasUnsavedChanges && (
+        <p className="toolbar-message">
+          Save your changes before running a check.
+        </p>
+      )}
+      <p className="sr-only" role="status">
+        {isSaving ? "Saving endpoint…" : ""}
+      </p>
+      {isSaving && <p className="toolbar-message">Saving endpoint…</p>}
       {error !== null && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="toolbar-message error-text">
           {error}
         </p>
       )}
-
-      <RunCheckButton
-        endpointId={endpointId}
-        disabled={isRunDisabled}
-        disabledReason={runDisabledReason}
-      />
-    </form>
+    </section>
   );
 }

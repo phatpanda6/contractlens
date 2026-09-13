@@ -71,6 +71,7 @@ describe("POST /api/endpoints/[endpointId]/run", () => {
       data: expect.objectContaining({
         endpointId: "endpoint-1",
         status: "FAIL",
+        targetUrl: "/api/demo/products/v2",
         diff: [
           {
             type: "MISSING_FIELD",
