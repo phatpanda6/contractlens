@@ -101,13 +101,19 @@ What works today:
   v1 PASS -> v2 FAIL -> accept v2 -> v2 PASS journey through Chromium.
 - Every persisted endpoint run emits a structured summary containing its run ID,
   endpoint ID, status, duration, and diff count.
+- A local-development-only explanation API can generate and save an explanation
+  for a stored FAIL run. It reads the saved diffs, sends only selected diff fields
+  through Vercel AI Gateway, and leaves the saved PASS/FAIL status unchanged.
+  This API has mocked tests; the dashboard action and live Gateway walkthrough
+  are not complete yet.
 
 Still to do:
 
 - Complete a targeted keyboard, visible-focus, screen-reader announcement,
   narrow-viewport, long-JSON, and slow/failing-operation audit.
 - Add a CLI after the web workflow is settled.
-- Add AI explanations without giving AI control over PASS/FAIL.
+- Add a dashboard action to request and display saved AI explanations, then
+  verify the complete local workflow with a live Gateway call.
 
 ## Core Engine
 
@@ -296,9 +302,13 @@ The product treats new fields as informational because existing frontend code ca
 
 ## AI Design Principle
 
-AI will not decide whether a contract passes or fails.
+AI does not decide whether a contract passes or fails.
 
-The deterministic schema engine is responsible for detecting missing fields, new fields, and type changes. AI will be added later only to explain already-detected diffs in plain English.
+The deterministic schema engine detects missing fields, new fields, and type
+changes. The local-only explanation API uses the AI SDK through Vercel AI Gateway
+to explain a saved FAIL run's already-detected diffs in plain English. The
+hosted demo does not allow live AI generation. The dashboard UI for requesting
+and displaying explanations is still in progress.
 
 This keeps correctness in code and uses AI for communication.
 
@@ -319,7 +329,8 @@ This keeps correctness in code and uses AI for communication.
   1 MiB response limit.
 - Production observability currently consists of structured per-run summaries;
   metrics and alerting are not implemented.
-- AI explanations and the CLI have not been implemented.
+- The AI explanation backend has mocked tests, but its dashboard action and a
+  live local walkthrough are still pending. The CLI is not implemented.
 
 ## Tech Stack
 
@@ -331,11 +342,11 @@ This keeps correctness in code and uses AI for communication.
 - Playwright
 - ESLint
 - Prisma and PostgreSQL schema
+- Vercel AI SDK for the local-only explanation backend
 - GitHub Actions
 
 Planned later:
 
-- Vercel AI SDK or another structured AI integration
 - A small CLI
 
 ## Development
@@ -357,6 +368,14 @@ cp .env.example .env
 Replace `YOUR_POSTGRES_USER` in `.env` with your local PostgreSQL user. The
 private `.env` file is ignored by Git; `.env.example` documents the required
 variables without containing real credentials.
+
+For local AI explanation requests, set `AI_GATEWAY_API_KEY` in your private
+`.env` file. Leave it blank if you are only using deterministic checks. Keep
+the key on the server; it is never needed in browser code. The explanation API
+is enabled only when `NODE_ENV` is `development` and `HOSTED_DEMO_MODE` is
+`"false"`. A missing key or failed model call leaves the saved check intact and
+returns a retryable explanation error. The current dashboard does not yet offer
+an **Explain this result** button.
 
 Leave `HOSTED_DEMO_MODE="false"` for local or self-hosted use. In this mode,
 ContractLens can check supported public HTTPS endpoints after applying its
