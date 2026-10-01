@@ -29,6 +29,8 @@ function readRun(value: unknown): DashboardTestRun {
     diff: value.diff ?? null,
     errorMessage:
       typeof value.errorMessage === "string" ? value.errorMessage : null,
+    aiExplanation:
+      typeof value.aiExplanation === "string" ? value.aiExplanation : null,
   };
 }
 
@@ -83,4 +85,24 @@ export function applySavedResult(
     };
   }
   throw new Error("Unsupported endpoint action");
+}
+
+export function addExplanationToRun(
+  current: DashboardEndpoint,
+  runId: string,
+  explanation: string,
+): DashboardEndpoint {
+  return {
+    ...current,
+    testRuns: current.testRuns.map((run) => {
+      if (run.id !== runId) {
+        return run;
+      }
+
+      return {
+        ...run,
+        aiExplanation: explanation,
+      };
+    }),
+  };
 }

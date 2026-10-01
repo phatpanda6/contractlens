@@ -2,7 +2,7 @@
 
 ContractLens is a lightweight developer tool for detecting breaking API response-shape changes.
 
-The goal is simple: capture the current shape of an API response as a baseline contract, then compare future responses against that baseline. ContractLens uses deterministic TypeScript logic to detect what changed, and later AI will explain the frontend impact in plain English.
+The goal is simple: capture the current shape of an API response as a baseline contract, then compare future responses against that baseline. ContractLens uses deterministic TypeScript logic to detect what changed. In local development, an optional AI action explains the possible frontend impact in plain English.
 
 > Deterministic code detects the API changes. AI explains the impact.
 
@@ -32,7 +32,7 @@ The key product difference is automatic baseline capture from a live response. C
 - frontend-breaking changes
 - deterministic TypeScript comparison logic
 - readable impact explanations
-- future AI explanations built on top of detected diffs
+- optional local AI explanations built on top of detected diffs
 
 ## Live Demo
 
@@ -40,7 +40,8 @@ The key product difference is automatic baseline capture from a live response. C
 
 The hosted demo accepts only the built-in `/api/demo/products/v1` and
 `/api/demo/products/v2` routes. Local and self-hosted installations can also
-check validated public HTTPS endpoints.
+check validated public HTTPS endpoints. The hosted demo shows deterministic
+results; live AI explanation requests are available only in local development.
 
 To try the breaking-change workflow:
 
@@ -104,16 +105,17 @@ What works today:
 - A local-development-only explanation API can generate and save an explanation
   for a stored FAIL run. It reads the saved diffs, sends only selected diff fields
   through Vercel AI Gateway, and leaves the saved PASS/FAIL status unchanged.
-  This API has mocked tests; the dashboard action and live Gateway walkthrough
-  are not complete yet.
+  The dashboard offers **Explain this result** for an unexplained FAIL run and
+  displays the saved explanation beside the detected changes, including after
+  a reload. The route and model helper have mocked tests, and the local v1 to
+  v2 flow has been exercised with a live Gateway call.
 
 Still to do:
 
 - Complete a targeted keyboard, visible-focus, screen-reader announcement,
   narrow-viewport, long-JSON, and slow/failing-operation audit.
 - Add a CLI after the web workflow is settled.
-- Add a dashboard action to request and display saved AI explanations, then
-  verify the complete local workflow with a live Gateway call.
+- Record a short local walkthrough of the v1 to v2 check and saved explanation.
 
 ## Core Engine
 
@@ -307,8 +309,8 @@ AI does not decide whether a contract passes or fails.
 The deterministic schema engine detects missing fields, new fields, and type
 changes. The local-only explanation API uses the AI SDK through Vercel AI Gateway
 to explain a saved FAIL run's already-detected diffs in plain English. The
-hosted demo does not allow live AI generation. The dashboard UI for requesting
-and displaying explanations is still in progress.
+dashboard shows the explanation beside the detected changes and reads it again
+after reload. The hosted demo does not allow live AI generation.
 
 This keeps correctness in code and uses AI for communication.
 
@@ -329,8 +331,9 @@ This keeps correctness in code and uses AI for communication.
   1 MiB response limit.
 - Production observability currently consists of structured per-run summaries;
   metrics and alerting are not implemented.
-- The AI explanation backend has mocked tests, but its dashboard action and a
-  live local walkthrough are still pending. The CLI is not implemented.
+- Live AI explanations require local development and a configured Gateway key;
+  the public hosted demo does not offer the Explain action. The CLI is not
+  implemented.
 
 ## Tech Stack
 
@@ -374,8 +377,9 @@ For local AI explanation requests, set `AI_GATEWAY_API_KEY` in your private
 the key on the server; it is never needed in browser code. The explanation API
 is enabled only when `NODE_ENV` is `development` and `HOSTED_DEMO_MODE` is
 `"false"`. A missing key or failed model call leaves the saved check intact and
-returns a retryable explanation error. The current dashboard does not yet offer
-an **Explain this result** button.
+returns a retryable explanation error. To try it locally, capture the v1
+baseline, run v2 to save a FAIL result, then click **Explain this result** beside
+the detected changes. Reload the page to confirm the explanation was saved.
 
 Leave `HOSTED_DEMO_MODE="false"` for local or self-hosted use. In this mode,
 ContractLens can check supported public HTTPS endpoints after applying its
@@ -447,4 +451,4 @@ npm run lint
    narrow-viewport, long-JSON, and slow/failing-operation audit.
 2. Consider a minimal CLI with readable diffs and exit code `1` for breaking
    changes.
-3. Add AI explanations only after the deterministic result is already known.
+3. Record a short local walkthrough of the AI explanation flow and link it here.

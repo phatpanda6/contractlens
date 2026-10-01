@@ -7,6 +7,7 @@ export type DashboardTestRun = {
   createdAt: Date;
   diff: unknown;
   errorMessage: string | null;
+  aiExplanation: string | null;
 };
 
 export type DashboardEndpoint = {

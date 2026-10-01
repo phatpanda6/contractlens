@@ -9,7 +9,7 @@ import {
   EndpointActionsProvider,
   type EndpointAction,
 } from "./endpoint-actions";
-import { applySavedResult } from "./saved-result";
+import { addExplanationToRun, applySavedResult } from "./saved-result";
 import { ResponseView } from "./response-view";
 import { JsonPanel } from "./json-panel";
 import { UiIcon } from "./ui-icon";
@@ -75,22 +75,33 @@ const melbourneDateTimeFormatter = new Intl.DateTimeFormat("en-AU", {
 export function Dashboard({
   project,
   isHostedDemoMode,
+  canRequestAiExplanation,
 }: {
   project: DashboardProject;
   isHostedDemoMode: boolean;
+  canRequestAiExplanation: boolean;
 }) {
   const [activeEndpoint, setActiveEndpoint] = useState(
     project.endpoints[0] ?? null,
   );
+
   const [previousProject, setPreviousProject] = useState(project);
   if (previousProject !== project) {
     setPreviousProject(project);
     setActiveEndpoint(project.endpoints[0] ?? null);
   }
 
+  const [explainError, setExplainError] = useState<string | null>(null);
+
+  const [isExplaining, setIsExplaining] = useState(false);
+
   function handleSavedResult(action: EndpointAction, result: unknown) {
     if (activeEndpoint === null) return;
     setActiveEndpoint(applySavedResult(activeEndpoint, action, result));
+
+    if (action === "run") {
+      setExplainError(null);
+    }
   }
 
   if (activeEndpoint === null) {
@@ -111,6 +122,45 @@ export function Dashboard({
 
   const recentRuns = activeEndpoint.testRuns;
   const latestRun = recentRuns[0] ?? null;
+
+  async function handleExplain() {
+    setExplainError(null);
+    if (latestRun === null) return;
+    setIsExplaining(true);
+    try {
+      const response = await fetch(
+        `/api/endpoints/${activeEndpoint.id}/run/${latestRun.id}/explain`,
+        { method: "POST" },
+      );
+
+      if (!response.ok) {
+        throw new Error("Explanation failed. Please try again.");
+      }
+
+      const result: unknown = await response.json();
+      if (
+        result === null ||
+        typeof result !== "object" ||
+        !("aiExplanation" in result) ||
+        typeof result.aiExplanation !== "string" ||
+        result.aiExplanation.trim().length === 0
+      ) {
+        throw new Error("Explanation failed. Please try again");
+      }
+
+      const explanation = result.aiExplanation;
+
+      setActiveEndpoint((current) =>
+        current === null
+          ? current
+          : addExplanationToRun(current, latestRun.id, explanation),
+      );
+    } catch {
+      setExplainError("Explanation failed. Please try again.");
+    } finally {
+      setIsExplaining(false);
+    }
+  }
 
   const latestRunTargetUrl = latestRun?.targetUrl ?? null;
 
@@ -390,6 +440,20 @@ export function Dashboard({
                     ? "Awaiting comparison"
                     : `${latestDiffCount} ${latestDiffCount === 1 ? "change" : "changes"} found`}
                 </span>
+                {canRequestAiExplanation &&
+                  latestRun?.status === "FAIL" &&
+                  !Boolean(latestRun.aiExplanation?.trim()) && (
+                    <button
+                      type="button"
+                      onClick={handleExplain}
+                      disabled={isExplaining}
+                      aria-busy={isExplaining}
+                      className="button button-secondary"
+                    >
+                      {isExplaining ? "Explaining..." : "Explain this result"}
+                    </button>
+                  )}
+                {explainError !== null && <p role="alert">{explainError}</p>}
               </div>
               {latestChanges === null ? (
                 <div className="comparison-empty">
@@ -466,6 +530,17 @@ export function Dashboard({
                 </table>
               )}
             </section>
+
+            {latestRun?.status === "FAIL" &&
+              Boolean(latestRun.aiExplanation?.trim()) && (
+                <section
+                  className="ai-explanation-section"
+                  aria-labelledby="ai-explanation-heading"
+                >
+                  <h3 id="ai-explanation-heading">AI explanation</h3>
+                  <p>{latestRun.aiExplanation}</p>
+                </section>
+              )}
 
             <ResponseView
               responses={

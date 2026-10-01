@@ -7,6 +7,9 @@ export default async function Home() {
 
   const isHostedDemoMode = process.env.HOSTED_DEMO_MODE === "true";
 
+  const canRequestAiExplanation =
+    process.env.NODE_ENV === "development" && !isHostedDemoMode;
+
   const project = await prisma.project.findFirst({
     where: {
       name: "Demo Project",
@@ -37,6 +40,7 @@ export default async function Home() {
               createdAt: true,
               diff: true,
               errorMessage: true,
+              aiExplanation: true,
             },
           },
         },
@@ -75,6 +79,10 @@ export default async function Home() {
   };
 
   return (
-    <Dashboard project={dashboardProject} isHostedDemoMode={isHostedDemoMode} />
+    <Dashboard
+      project={dashboardProject}
+      isHostedDemoMode={isHostedDemoMode}
+      canRequestAiExplanation={canRequestAiExplanation}
+    />
   );
 }
