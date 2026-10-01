@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySavedResult } from "./saved-result";
+import { applySavedResult, addExplanationToRun } from "./saved-result";
 import type { DashboardEndpoint } from "./dashboard-types";
 
 const failedRun = {
@@ -19,6 +19,7 @@ const failedRun = {
     },
   ],
   errorMessage: null,
+  aiExplanation: null,
 };
 const endpoint: DashboardEndpoint = {
   id: "endpoint-1",
@@ -130,5 +131,41 @@ describe("saved dashboard results", () => {
         },
       });
     }).toThrow("Invalid saved check");
+  });
+
+  it("preserves a saved AI explanation on a run", () => {
+    const explanation = "Changing price may break calculations";
+
+    const result = applySavedResult(endpoint, "run", {
+      endpoint,
+      testRun: {
+        ...failedRun,
+        createdAt: failedRun.createdAt.toISOString(),
+        aiExplanation: explanation,
+      },
+    });
+
+    expect(result.testRuns[0].aiExplanation).toBe(explanation);
+  });
+
+  it("adds an explanation to the matching saved run without changing its status or diffs", () => {
+    const explanation = "Changing price may break calculations";
+
+    const endpointWithTwoRuns = {
+      ...endpoint,
+      testRuns: [failedRun, { ...failedRun, id: "run-2" }],
+    };
+
+    const result = addExplanationToRun(
+      endpointWithTwoRuns,
+      "run-1",
+      explanation,
+    );
+
+    expect(result.testRuns[0].aiExplanation).toBe(explanation);
+    expect(result.testRuns[0].status).toBe(failedRun.status);
+    expect(result.testRuns[0].diff).toEqual(failedRun.diff);
+
+    expect(result.testRuns[1].aiExplanation).toBe(null);
   });
 });

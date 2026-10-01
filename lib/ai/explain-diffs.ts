@@ -41,9 +41,22 @@ export async function explainDiffs(diffs: unknown): Promise<string> {
 
   const result = await generateText({
     model: "openai/gpt-5.4-nano",
-    prompt: `Use only the supplied diffs. Explain possible frontend impact and what a frontend developer should check. Do not decide PASS/FAIL.
+    prompt: `Use only the supplied diffs. In plain text, write at most 100 words for a frontend developer.
 
-Changes:
+Use this format with each item on its own line:
+Summary: One sentence about the possible frontend impact.
+Check: One specific thing a frontend developer should check.
+Check: Another specific thing to check, if useful.
+Check: A third specific thing to check, if useful.
+
+Focus on what a frontend developer should check. Use short sentences. Do not use Markdown headings, bold text, or bullet symbols.
+
+Describe possibilities, not confirmed bugs. Do not assume an added field replaces a removed field. Do not decide PASS/FAIL or assign a risk level.
+
+State observed changes directly: a missing field is missing in this recorded response. Use words like “may” only for possible frontend effects. Do not infer that an added field replaces a missing field.
+
+In the summary, name the detected field changes directly. Only use uncertain language for their possible frontend effects. Avoid guessing the API’s business domain from field names.
+Diffs:
 ${JSON.stringify(safeDiffs)}`,
   });
 
