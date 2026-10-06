@@ -6,6 +6,14 @@ The goal is simple: capture the current shape of an API response as a baseline c
 
 > Deterministic code detects the API changes. AI explains the impact.
 
+## Video Walkthrough
+
+[Watch the ContractLens walkthrough](https://www.loom.com/share/789d89b95aa64d328a32f2c0d16136d5)
+
+The recording demonstrates local development: comparing the built-in responses,
+generating an AI explanation, reloading saved results, and accepting a new
+baseline. Live AI generation is disabled in the public hosted demo.
+
 ## Why ContractLens?
 
 Frontend developers often depend on API responses they do not fully control. A small backend response change, such as removing a field or changing a number into a string, can silently break UI rendering, sorting, formatting, or calculations.
