@@ -41,6 +41,7 @@ async function main() {
         method: "GET",
         baselineSchema,
         baselineExample,
+        baselineSourceUrl: endpointUrl,
       },
     });
   } else {
@@ -52,6 +53,7 @@ async function main() {
         url: endpointUrl,
         baselineSchema,
         baselineExample,
+        baselineSourceUrl: endpointUrl,
       },
     });
   }

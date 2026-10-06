@@ -36,6 +36,7 @@ describe("POST /api/endpoints/[endpointId]/baseline", () => {
       id: "run-2",
       endpointId: "endpoint-1",
       status: "FAIL",
+      targetUrl: "/api/demo/products/v2",
       responseBody: demoProductV2,
       detectedSchema,
     });
@@ -44,6 +45,7 @@ describe("POST /api/endpoints/[endpointId]/baseline", () => {
       id: "endpoint-1",
       baselineExample: demoProductV2,
       baselineSchema: detectedSchema,
+      baselineSourceUrl: "/api/demo/products/v2",
     });
 
     const request = new Request(
@@ -83,11 +85,13 @@ describe("POST /api/endpoints/[endpointId]/baseline", () => {
       data: {
         baselineExample: demoProductV2,
         baselineSchema: detectedSchema,
+        baselineSourceUrl: "/api/demo/products/v2",
       },
       select: {
         id: true,
         baselineExample: true,
         baselineSchema: true,
+        baselineSourceUrl: true,
       },
     });
 
@@ -97,8 +101,36 @@ describe("POST /api/endpoints/[endpointId]/baseline", () => {
         id: "endpoint-1",
         baselineExample: demoProductV2,
         baselineSchema: detectedSchema,
+        baselineSourceUrl: "/api/demo/products/v2",
       },
     });
+  });
+
+  it("keeps the baseline source unknown when accepting a legacy run", async () => {
+    prismaMocks.findTestRun.mockResolvedValue({
+      status: "FAIL",
+      targetUrl: null,
+      responseBody: demoProductV2,
+      detectedSchema: { price: "string" },
+    });
+    prismaMocks.updateEndpoint.mockResolvedValue({
+      id: "endpoint-1",
+      baselineSourceUrl: null,
+    });
+    const response = await POST(
+      new Request("http://localhost:3000/api/endpoints/endpoint-1/baseline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testRunId: "legacy-run" }),
+      }),
+      { params: Promise.resolve({ endpointId: "endpoint-1" }) },
+    );
+    expect(response.status).toBe(200);
+    expect(prismaMocks.updateEndpoint).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ baselineSourceUrl: null }),
+      }),
+    );
   });
 
   it("returns 400 when the request is not valid JSON", async () => {
@@ -248,6 +280,7 @@ describe("POST /api/endpoints/[endpointId]/baseline", () => {
       id: "run-2",
       endpointId: "endpoint-1",
       status: "FAIL",
+      targetUrl: "/api/demo/products/v2",
       responseBody: demoProductV2,
       detectedSchema,
     });

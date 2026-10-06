@@ -12,7 +12,7 @@ test("loads the ContractLens dashboard", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByLabel("Endpoint URL")).toBeHidden();
   await expect(
-    page.getByRole("region", { name: "Baseline response", exact: true }),
+    page.getByRole("region", { name: "Saved baseline response", exact: true }),
   ).toBeVisible();
 });
 
@@ -68,11 +68,21 @@ test("keeps recorded targets truthful through edits, reload, baseline acceptance
     "/api/demo/products/v1",
   );
 
+  const baselineSource = page
+    .getByRole("region", { name: "Saved baseline response", exact: true })
+    .locator(".json-source");
+  const latestSource = page
+    .getByRole("region", { name: "Latest checked response", exact: true })
+    .locator(".json-source");
+  await expect(baselineSource).toHaveText("Captured from /api/demo/products/v1");
+
   await page.getByRole("button", { name: "Changed response v2" }).click();
   await expect(runButton).toBeEnabled();
   await expect(
     page.getByRole("button", { name: "Changed response v2" }),
   ).toHaveAttribute("aria-pressed", "true");
+  await expect(baselineSource).toHaveText("Captured from /api/demo/products/v1");
+  await expect(latestSource).toHaveText("Checked /api/demo/products/v1");
   await expect(warning).toContainText(
     "This result was recorded for /api/demo/products/v1. The current target is /api/demo/products/v2.",
   );
@@ -83,6 +93,8 @@ test("keeps recorded targets truthful through edits, reload, baseline acceptance
   await runButton.click();
   await expect(result.getByText("Fail", { exact: true })).toBeVisible();
   await expect(warning).toBeHidden();
+  await expect(baselineSource).toHaveText("Captured from /api/demo/products/v1");
+  await expect(latestSource).toHaveText("Checked /api/demo/products/v2");
   await expect(result.locator(".result-metadata")).toContainText(
     "/api/demo/products/v2",
   );
@@ -103,6 +115,9 @@ test("keeps recorded targets truthful through edits, reload, baseline acceptance
   await expect(result.getByText("Fail", { exact: true })).toBeVisible();
   await expect(history.nth(0).getByText("Fail", { exact: true })).toBeVisible();
 
+  await expect(baselineSource).toHaveText("Captured from /api/demo/products/v1");
+  await expect(latestSource).toHaveText("Checked /api/demo/products/v2");
+
   // A stale result must not be accepted while looking at a different target.
   await page.getByRole("button", { name: "Original response v1" }).click();
   await expect(warning).toBeVisible();
@@ -119,9 +134,12 @@ test("keeps recorded targets truthful through edits, reload, baseline acceptance
   ).toBeVisible();
   await expect(result.getByText("Fail", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "Baseline response", exact: true }),
+    page.getByRole("region", { name: "Saved baseline response", exact: true }),
   ).toContainText('"name"');
 
+  await expect(baselineSource).toHaveText("Captured from /api/demo/products/v2");
+  await page.reload();
+  await expect(baselineSource).toHaveText("Captured from /api/demo/products/v2");
   await runButton.click();
   await expect(result.getByText("Pass", { exact: true })).toBeVisible();
   await expect(
@@ -203,19 +221,19 @@ test("supports keyboard evidence switching and narrow screens without page overf
   await page.keyboard.press("ArrowRight");
   await expect(schema).toBeChecked();
   await expect(
-    page.getByRole("region", { name: "Baseline schema", exact: true }),
+    page.getByRole("region", { name: "Saved baseline schema", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "Baseline response", exact: true }),
+    page.getByRole("region", { name: "Saved baseline response", exact: true }),
   ).toBeHidden();
   await page.keyboard.press("ArrowLeft");
   await expect(response).toBeChecked();
   const baseline = page.getByRole("region", {
-    name: "Baseline response",
+    name: "Saved baseline response",
     exact: true,
   });
   const latest = page.getByRole("region", {
-    name: "Latest response",
+    name: "Latest checked response",
     exact: true,
   });
   const baselineBox = await baseline.boundingBox();

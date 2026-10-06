@@ -17,6 +17,7 @@ export type DashboardEndpoint = {
   url: string;
   baselineSchema: unknown;
   baselineExample: unknown;
+  baselineSourceUrl: string | null;
   testRuns: DashboardTestRun[];
 };
 

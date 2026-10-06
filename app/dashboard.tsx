@@ -403,7 +403,7 @@ export function Dashboard({
             {latestRun !== null && (
               <div className="result-metadata">
                 <span>
-                  Recorded target{" "}
+                  Checked endpoint{" "}
                   <code>
                     {latestRunTargetUrl ?? "Not recorded for this older check"}
                   </code>
@@ -546,14 +546,18 @@ export function Dashboard({
               responses={
                 <>
                   <JsonPanel
-                    title="Baseline response"
-                    label="SAVED CONTRACT"
+                    title="Saved baseline response"
+                    label="EXPECTED RESPONSE"
+                    sourceUrl={activeEndpoint.baselineSourceUrl}
+                    sourceLabel="Captured from"
                     value={persistedPanels.baselineResponse}
                     emptyMessage="No baseline response captured yet. Run a check to capture one."
                   />
                   <JsonPanel
-                    title="Latest response"
-                    label="RECORDED RESPONSE"
+                    title="Latest checked response"
+                    label="LAST RECORDED CHECK"
+                    sourceUrl={latestRunTargetUrl}
+                    sourceLabel="Checked"
                     value={persistedPanels.latestResponse}
                     emptyMessage={
                       latestRun?.status === "ERROR"
@@ -567,14 +571,18 @@ export function Dashboard({
               schemas={
                 <>
                   <JsonPanel
-                    title="Baseline schema"
-                    label="SAVED CONTRACT"
+                    title="Saved baseline schema"
+                    label="EXPECTED SHAPE"
+                    sourceUrl={activeEndpoint.baselineSourceUrl}
+                    sourceLabel="Captured from"
                     value={persistedPanels.baselineSchema}
                     emptyMessage="No baseline schema captured yet."
                   />
                   <JsonPanel
-                    title="Latest schema"
-                    label="RECORDED SCHEMA"
+                    title="Latest checked schema"
+                    label="LAST RECORDED CHECK"
+                    sourceUrl={latestRunTargetUrl}
+                    sourceLabel="Checked"
                     value={persistedPanels.latestSchema}
                     emptyMessage={
                       latestRun?.status === "ERROR"

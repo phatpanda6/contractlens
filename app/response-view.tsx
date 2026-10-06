@@ -39,8 +39,9 @@ export function ResponseView({
         {view === "response" ? responses : schemas}
       </div>
       <p className="evidence-note">
-        The saved baseline reflects your current contract. Accepting a response
-        updates it; the recorded check above stays unchanged.
+        The saved baseline defines the expected response shape for future checks.
+        The latest checked response was fetched during the last check. Accepting
+        it updates the baseline; the recorded result above stays unchanged.
       </p>
     </section>
   );

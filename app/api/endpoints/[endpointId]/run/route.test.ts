@@ -170,6 +170,12 @@ describe("POST /api/endpoints/[endpointId]/run", () => {
       params: Promise.resolve({ endpointId: "endpoint-1" }),
     });
 
+    expect(prismaMocks.updateEndpoint).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ baselineSourceUrl: "/api/demo/products/v1" }),
+      }),
+    );
+
     expect(infoSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         event: "endpoint_run_completed",

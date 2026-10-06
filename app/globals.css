@@ -216,6 +216,13 @@ h1 {
   min-width: 0;
   flex: 1;
 }
+.endpoint-choice-guidance {
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  color: #59636f;
+  font-size: 11px;
+  line-height: 1.6;
+}
 .endpoint-name {
   display: flex;
   gap: 9px;
@@ -754,6 +761,7 @@ h1 {
 }
 .json-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
@@ -770,6 +778,16 @@ h1 {
   font-size: 8px;
   letter-spacing: 1px;
   color: #91a6b0;
+}
+.json-source {
+  padding: 8px 14px;
+  border-bottom: 1px solid #304047;
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.json-source code {
+  color: #e0e8eb;
 }
 .json-panel pre {
   padding: 11px 15px;
@@ -1061,6 +1079,9 @@ h1 {
   }
   .endpoint-toolbar {
     padding: 16px;
+  }
+  .endpoint-choice-guidance {
+    padding: 10px 16px;
   }
   .endpoint-identity {
     flex-basis: 100%;

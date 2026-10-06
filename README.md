@@ -63,6 +63,11 @@ inspect either view. On smaller screens, changes become stacked cards and the
 response panels stack vertically. Long JSON scrolls within each panel; previews
 are limited to 200 lines and 2,000 characters per line.
 
+Response and schema panels show the baseline source URL and the latest checked
+URL separately. Selecting v1 or v2 changes the next check target, not the saved
+baseline. Capturing or accepting a baseline records its source; older baselines
+show "Source not recorded" rather than guessing from the configured endpoint.
+
 Each new check records its target URL. Editing an endpoint keeps the old result
 and shows a warning until the target matches or a new check is run. Older checks
 without a recorded target are labelled explicitly. The table describes the
