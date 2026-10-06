@@ -28,6 +28,7 @@ const endpoint: DashboardEndpoint = {
   url: "/api/demo/products/v2",
   baselineExample: { price: 10 },
   baselineSchema: { price: "number" },
+  baselineSourceUrl: "/api/demo/products/v1",
   testRuns: [failedRun],
 };
 
@@ -44,6 +45,7 @@ describe("saved dashboard results", () => {
     expect(result.url).toBe("/api/demo/products/v1");
     expect(result.testRuns[0].targetUrl).toBe("/api/demo/products/v2");
     expect(result.baselineExample).toEqual({ price: 10 });
+    expect(result.baselineSourceUrl).toBe("/api/demo/products/v1");
     expect(endpoint.url).toBe("/api/demo/products/v2");
   });
 
@@ -53,11 +55,26 @@ describe("saved dashboard results", () => {
         id: endpoint.id,
         baselineExample: failedRun.responseBody,
         baselineSchema: failedRun.detectedSchema,
+        baselineSourceUrl: failedRun.targetUrl,
       },
     });
     expect(result.baselineExample).toEqual({ price: "10" });
+    expect(result.baselineSourceUrl).toBe(failedRun.targetUrl);
     expect(result.testRuns[0].status).toBe("FAIL");
     expect(result.testRuns[0].diff).toEqual(failedRun.diff);
+  });
+
+  it("clears the old source when accepting a legacy run with no recorded target", () => {
+    const result = applySavedResult(endpoint, "accept", {
+      endpoint: {
+        id: endpoint.id,
+        baselineExample: failedRun.responseBody,
+        baselineSchema: failedRun.detectedSchema,
+        baselineSourceUrl: null,
+      },
+    });
+    expect(result.baselineSourceUrl).toBeNull();
+    expect(result.url).toBe(endpoint.url);
   });
 
   it("shows a persisted error as the latest check and retains earlier history", () => {

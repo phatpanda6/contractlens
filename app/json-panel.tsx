@@ -22,11 +22,15 @@ export function JsonPanel({
   title,
   label,
   value,
+  sourceUrl,
+  sourceLabel,
   emptyMessage,
 }: {
   title: string;
   label: string;
   value: unknown;
+  sourceUrl: string | null;
+  sourceLabel: string;
   emptyMessage: string;
 }) {
   const lines =
@@ -40,6 +44,15 @@ export function JsonPanel({
         <h4>{title}</h4>
         <span>{label}</span>
       </div>
+      <p className="json-source">
+        {sourceUrl ? (
+          <>
+            {sourceLabel} <code>{sourceUrl}</code>
+          </>
+        ) : (
+          "Source not recorded"
+        )}
+      </p>
       {value === null ? (
         <p className="json-empty">{emptyMessage}</p>
       ) : (

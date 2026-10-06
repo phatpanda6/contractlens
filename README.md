@@ -6,6 +6,14 @@ The goal is simple: capture the current shape of an API response as a baseline c
 
 > Deterministic code detects the API changes. AI explains the impact.
 
+## Video Walkthrough
+
+[Watch the ContractLens walkthrough](https://www.loom.com/share/789d89b95aa64d328a32f2c0d16136d5)
+
+The recording demonstrates local development: comparing the built-in responses,
+generating an AI explanation, reloading saved results, and accepting a new
+baseline. Live AI generation is disabled in the public hosted demo.
+
 ## Why ContractLens?
 
 Frontend developers often depend on API responses they do not fully control. A small backend response change, such as removing a field or changing a number into a string, can silently break UI rendering, sorting, formatting, or calculations.
@@ -62,6 +70,11 @@ baseline and latest recorded response. Use the **Response / Schema** switch to
 inspect either view. On smaller screens, changes become stacked cards and the
 response panels stack vertically. Long JSON scrolls within each panel; previews
 are limited to 200 lines and 2,000 characters per line.
+
+Response and schema panels show the baseline source URL and the latest checked
+URL separately. Selecting v1 or v2 changes the next check target, not the saved
+baseline. Capturing or accepting a baseline records its source; older baselines
+show "Source not recorded" rather than guessing from the configured endpoint.
 
 Each new check records its target URL. Editing an endpoint keeps the old result
 and shows a warning until the target matches or a new check is run. Older checks

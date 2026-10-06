@@ -200,6 +200,7 @@ export async function POST(
         data: {
           baselineExample: responseBody,
           baselineSchema: detectedSchema,
+          baselineSourceUrl: endpoint.url,
         },
       });
 

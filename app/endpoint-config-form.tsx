@@ -117,6 +117,7 @@ export function EndpointConfigForm({
           className="endpoint-shortcuts"
           role="group"
           aria-label="Choose and save a demo endpoint"
+          aria-describedby="endpoint-choice-guidance"
         >
           {(
             [
@@ -155,6 +156,10 @@ export function EndpointConfigForm({
           />
         </div>
       </div>
+      <p id="endpoint-choice-guidance" className="endpoint-choice-guidance">
+        Choose the response to fetch on your next check. Changing the target
+        does not replace your saved baseline.
+      </p>
       <div id="endpoint-editor" hidden={!isEditing}>
         <form onSubmit={handleSubmit} className="endpoint-editor">
           <p className="editor-intro">

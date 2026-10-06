@@ -67,9 +67,16 @@ export function applySavedResult(
   if (!("baselineExample" in endpoint) || !("baselineSchema" in endpoint)) {
     throw new Error("Missing saved baseline");
   }
+  if (
+    endpoint.baselineSourceUrl !== null &&
+    typeof endpoint.baselineSourceUrl !== "string"
+  ) {
+    throw new Error("Invalid baseline source");
+  }
   const baseline = {
     baselineExample: endpoint.baselineExample,
     baselineSchema: endpoint.baselineSchema,
+    baselineSourceUrl: endpoint.baselineSourceUrl,
   };
   if (action === "accept") return { ...current, ...baseline };
 

@@ -28,6 +28,7 @@ export default async function Home() {
           url: true,
           baselineSchema: true,
           baselineExample: true,
+          baselineSourceUrl: true,
           testRuns: {
             orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             take: 5,

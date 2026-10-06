@@ -42,6 +42,7 @@ export async function POST(
         responseBody: true,
         detectedSchema: true,
         status: true,
+        targetUrl: true,
       },
     });
 
@@ -70,11 +71,13 @@ export async function POST(
       data: {
         baselineExample: selectedRun.responseBody,
         baselineSchema: selectedRun.detectedSchema,
+        baselineSourceUrl: selectedRun.targetUrl,
       },
       select: {
         id: true,
         baselineExample: true,
         baselineSchema: true,
+        baselineSourceUrl: true,
       },
     });
 
