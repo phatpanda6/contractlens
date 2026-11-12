@@ -2,9 +2,10 @@
 
 import { formatDiff, type SchemaDiff } from "@/lib/contractlens";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { EndpointConfigForm } from "./endpoint-config-form";
 import { AcceptBaselineButton } from "./accept-baseline-button";
+import { AiExplanation, type ExplanationStatus } from "./ai-explanation";
 import {
   EndpointActionsProvider,
   type EndpointAction,
@@ -91,27 +92,26 @@ export function Dashboard({
     setActiveEndpoint(project.endpoints[0] ?? null);
   }
 
-  const [explainError, setExplainError] = useState<string | null>(null);
-
-  const [isExplaining, setIsExplaining] = useState(false);
+  const [explanationRequest, setExplanationRequest] = useState<{
+    runId: string;
+    status: Exclude<ExplanationStatus, "idle">;
+  } | null>(null);
+  const guideRef = useRef<HTMLDetailsElement>(null);
 
   function handleSavedResult(action: EndpointAction, result: unknown) {
     if (activeEndpoint === null) return;
     setActiveEndpoint(applySavedResult(activeEndpoint, action, result));
-
-    if (action === "run") {
-      setExplainError(null);
-    }
   }
 
   if (activeEndpoint === null) {
     return (
-      <main className="min-h-screen bg-stone-50 px-6 py-16 text-stone-950">
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-6 rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Demo endpoint unavailable
-          </h1>
-          <p className="text-sm leading-6 text-stone-500">
+      <main className="workspace message-workspace">
+        <div className="message-card">
+          <span className="result-icon">
+            <UiIcon name="info" />
+          </span>
+          <h1>Demo endpoint unavailable</h1>
+          <p>
             ContractLens loaded the Demo Project, but no endpoint was found.
             Please try again later.
           </p>
@@ -122,14 +122,25 @@ export function Dashboard({
 
   const recentRuns = activeEndpoint.testRuns;
   const latestRun = recentRuns[0] ?? null;
+  const explanation = latestRun?.aiExplanation?.trim() || null;
+  const explanationStatus =
+    explanationRequest && explanationRequest.runId === latestRun?.id
+      ? explanationRequest.status
+      : "idle";
+  const isExplaining = explanationRequest?.status === "generating";
 
   async function handleExplain() {
-    setExplainError(null);
-    if (latestRun === null) return;
-    setIsExplaining(true);
+    if (
+      !canRequestAiExplanation ||
+      latestRun?.status !== "FAIL" ||
+      explanation ||
+      isExplaining
+    ) return;
+    const runId = latestRun.id;
+    setExplanationRequest({ runId, status: "generating" });
     try {
       const response = await fetch(
-        `/api/endpoints/${activeEndpoint.id}/run/${latestRun.id}/explain`,
+        `/api/endpoints/${activeEndpoint.id}/run/${runId}/explain`,
         { method: "POST" },
       );
 
@@ -148,17 +159,16 @@ export function Dashboard({
         throw new Error("Explanation failed. Please try again");
       }
 
-      const explanation = result.aiExplanation;
+      const generatedText = result.aiExplanation;
 
       setActiveEndpoint((current) =>
         current === null
           ? current
-          : addExplanationToRun(current, latestRun.id, explanation),
+          : addExplanationToRun(current, runId, generatedText),
       );
+      setExplanationRequest({ runId, status: "ready" });
     } catch {
-      setExplainError("Explanation failed. Please try again.");
-    } finally {
-      setIsExplaining(false);
+      setExplanationRequest({ runId, status: "error" });
     }
   }
 
@@ -281,7 +291,7 @@ export function Dashboard({
             {isHostedDemoMode ? "Live demo" : "Workspace"}
           </span>
           <nav aria-label="Main navigation">
-            <a href="#how-it-works">How it works</a>
+            <a href="#history-heading" className="history-link">History</a>
             <a
               href="https://github.com/phatpanda6/contractlens"
               target="_blank"
@@ -298,26 +308,39 @@ export function Dashboard({
 
       <main id="main-content" className="workspace" tabIndex={-1}>
         <div className="intro">
-          <div>
+          <div className="intro-copy">
+            <p className="eyebrow intro-kicker">
+              {project.name} <span> / </span> API contracts
+            </p>
             <h1>
-              Catch breaking API changes<span className="accent-dot">.</span>
+              Catch breaking<br className="intro-break" /> API changes.
             </h1>
             <p className="intro-description">
-              A clear view of what changed. Before it breaks your frontend.
+              Compare live JSON against a saved baseline and see exactly what changed.
             </p>
           </div>
-          <div className="workspace-meta">
-            <span className="project-label">{project.name}</span>
-            <span>GET endpoints · JSON responses</span>
+          <div className="intro-workflow">
+            <ol className="workflow-guide" aria-label="Check workflow">
+              <li>
+                <span><UiIcon name="code" /></span>Baseline
+              </li>
+              <li>
+                <span><UiIcon name="play" /></span>Check
+              </li>
+              <li>
+                <span><UiIcon name="compare" /></span>Review
+              </li>
+            </ol>
+            <a
+              href="#how-it-works"
+              onClick={() => {
+                if (guideRef.current) guideRef.current.open = true;
+              }}
+            >
+              How it works <UiIcon name="arrow" />
+            </a>
           </div>
         </div>
-        {isHostedDemoMode && (
-          <p className="shared-notice">
-            <UiIcon name="info" />
-            Shared demo: endpoint, baseline, and history changes are visible to
-            other visitors.
-          </p>
-        )}
 
         <EndpointActionsProvider onSavedResult={handleSavedResult}>
           <EndpointConfigForm
@@ -328,19 +351,13 @@ export function Dashboard({
             isHostedDemoMode={isHostedDemoMode}
           />
 
-          <div className="workflow-guide" aria-label="Check workflow">
-            <span>
-              <b>01</b> Capture a baseline
-            </span>
-            <UiIcon name="arrow" />
-            <span>
-              <b>02</b> Run a check
-            </span>
-            <UiIcon name="arrow" />
-            <span>
-              <b>03</b> Review changes
-            </span>
-          </div>
+          {isHostedDemoMode && (
+            <p className="shared-notice">
+              <UiIcon name="info" />
+              Shared demo · Changes to the endpoint, baseline, and history are
+              visible to other visitors.
+            </p>
+          )}
 
           <section
             className={`comparison-card result-${resultTone}`}
@@ -357,7 +374,7 @@ export function Dashboard({
                   <UiIcon
                     name={
                       resultTone === "fail"
-                        ? "close"
+                        ? "compare"
                         : resultTone === "pass"
                           ? "check"
                           : "info"
@@ -430,9 +447,6 @@ export function Dashboard({
               className="changes-section"
               aria-labelledby="changes-heading"
             >
-              <a className="mobile-evidence-link" href="#response-heading">
-                View responses <UiIcon name="arrow" />
-              </a>
               <div className="changes-heading">
                 <h3 id="changes-heading">Detected changes</h3>
                 <span>
@@ -440,20 +454,9 @@ export function Dashboard({
                     ? "Awaiting comparison"
                     : `${latestDiffCount} ${latestDiffCount === 1 ? "change" : "changes"} found`}
                 </span>
-                {canRequestAiExplanation &&
-                  latestRun?.status === "FAIL" &&
-                  !Boolean(latestRun.aiExplanation?.trim()) && (
-                    <button
-                      type="button"
-                      onClick={handleExplain}
-                      disabled={isExplaining}
-                      aria-busy={isExplaining}
-                      className="button button-secondary"
-                    >
-                      {isExplaining ? "Explaining..." : "Explain this result"}
-                    </button>
-                  )}
-                {explainError !== null && <p role="alert">{explainError}</p>}
+                <a className="evidence-link" href="#response-heading">
+                  View evidence <UiIcon name="arrow" />
+                </a>
               </div>
               {latestChanges === null ? (
                 <div className="comparison-empty">
@@ -466,7 +469,9 @@ export function Dashboard({
                         ? "The saved comparison could not be read. Run a new check."
                         : latestRun?.status === "BASELINE_CREATED"
                           ? "Baseline captured. Choose the changed response and run a check to see the difference."
-                          : "Your first check starts here. Use the original response to establish a passing result, then try the changed response."}
+                          : isHostedDemoMode
+                            ? "Start with the original response to establish a baseline, then try the changed response."
+                            : "Run a check to capture a baseline from your endpoint."}
                   </p>
                 </div>
               ) : latestChanges.length === 0 ? (
@@ -532,14 +537,13 @@ export function Dashboard({
             </section>
 
             {latestRun?.status === "FAIL" &&
-              Boolean(latestRun.aiExplanation?.trim()) && (
-                <section
-                  className="ai-explanation-section"
-                  aria-labelledby="ai-explanation-heading"
-                >
-                  <h3 id="ai-explanation-heading">AI explanation</h3>
-                  <p>{latestRun.aiExplanation}</p>
-                </section>
+              (canRequestAiExplanation || explanation) && (
+                <AiExplanation
+                  text={explanation}
+                  status={explanationStatus}
+                  requestPending={isExplaining}
+                  onExplain={handleExplain}
+                />
               )}
 
             <ResponseView
@@ -615,7 +619,8 @@ export function Dashboard({
               Recent checks
             </h2>
             <span className="section-caption">
-              Last {recentRuns.length} of your saved checks
+              {recentRuns.length} saved{" "}
+              {recentRuns.length === 1 ? "check" : "checks"} shown
             </span>
           </div>
           {recentRuns.length === 0 ? (
@@ -667,7 +672,7 @@ export function Dashboard({
           )}
         </section>
 
-        <details id="how-it-works" className="how-it-works">
+        <details ref={guideRef} id="how-it-works" className="how-it-works">
           <summary>
             New to ContractLens? <span>Here’s the two-minute workflow</span>
             <UiIcon name="arrow" />

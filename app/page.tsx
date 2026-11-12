@@ -51,12 +51,10 @@ export default async function Home() {
 
   if (project === null) {
     return (
-      <main className="min-h-screen bg-stone-50 px-6 py-16 text-stone-950">
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-6 rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Demo data unavailable
-          </h1>
-          <p className="text-sm leading-6 text-stone-500">
+      <main className="workspace message-workspace">
+        <div className="message-card">
+          <h1>Demo data unavailable</h1>
+          <p>
             ContractLens loaded, but the seeded demo project could not be found.
             Please try again later.
           </p>
