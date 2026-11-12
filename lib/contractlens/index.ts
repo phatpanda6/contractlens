@@ -3,3 +3,4 @@ export * from "./infer-schema";
 export * from "./compare-schemas";
 export * from "./format-diff";
 export * from "./compare-responses";
+export * from "./isolate-changes";

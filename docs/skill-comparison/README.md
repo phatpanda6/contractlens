@@ -91,3 +91,27 @@ the plain answer was more direct about a real problem.
   saved answers in [`runs/`](runs/) let anyone check the table.
 - One extra "without" run was made first to check the setup. It is not
   counted. It gave the same findings as the three counted runs.
+
+## After the improvement
+
+After the [trial on real code](../real-codebase-trial/README.md), the skill
+was changed to test each changed field on its own, and a fifth label, "Test
+still passes", was added. Three fresh runs with the improved skill on this
+example, same model (`claude-opus-5-5`), same prompt. Saved answers:
+[`runs-improved/`](runs-improved/).
+
+| Field | Skill before (3 runs) | Skill after (3 runs) |
+|---|---|---|
+| `price` | Confirmed broken | Confirmed broken, failing on its own |
+| `title` | May be affected | Test still passes |
+| `inStock` | No usage found | No usage found, and the test passes on its own |
+| `name` | Observed change only | Observed change only, and the test passes on its own |
+
+The labels were the same in all three runs, and no run changed a repository
+file or described `title` and `name` as a rename.
+
+The `title` result shows the new label's limit. The example's test checks
+only the price, so it passes with `title` removed. All three runs said the
+pass proves nothing about the title, and two said the output would probably
+show `undefined`. Plain Claude said directly that it would. A thin test makes
+"Test still passes" less informative than reading the code.
