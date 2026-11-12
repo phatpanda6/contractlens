@@ -391,8 +391,9 @@ the key on the server; it is never needed in browser code. The explanation API
 is enabled only when `NODE_ENV` is `development` and `HOSTED_DEMO_MODE` is
 `"false"`. A missing key or failed model call leaves the saved check intact and
 returns a retryable explanation error. To try it locally, capture the v1
-baseline, run v2 to save a FAIL result, then click **Explain this result** beside
-the detected changes. Reload the page to confirm the explanation was saved.
+baseline, run v2 to save a FAIL result, then click **Explain this result** below
+the detected changes. The card shows the possible frontend impact and what to
+check next. Reload the page to confirm the explanation was saved.
 
 Leave `HOSTED_DEMO_MODE="false"` for local or self-hosted use. In this mode,
 ContractLens can check supported public HTTPS endpoints after applying its

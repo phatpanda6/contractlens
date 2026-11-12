@@ -8,6 +8,7 @@ type IconName =
   | "arrow"
   | "edit"
   | "code"
+  | "compare"
   | "clock"
   | "info"
   | "github";
@@ -20,6 +21,7 @@ const paths: Record<IconName, string> = {
   arrow: "M4 12h16m-6-6 6 6-6 6",
   edit: "m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z",
   code: "m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16",
+  compare: "M4 7h16m-4-4 4 4-4 4m4 6H4m4-4-4 4 4 4",
   clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 4v5l3 2",
   info: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 8v6m0-10v1",
   github:
