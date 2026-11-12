@@ -79,45 +79,18 @@ This is a small sample on one example, not evidence that the skill is better in 
 
 ## Live Demo
 
-The web app is the hosted demo and a place to inspect saved check history.
-
 [Open the deployed ContractLens demo](https://contractlens-iota.vercel.app/)
 
-The hosted demo accepts only the built-in `/api/demo/products/v1` and
-`/api/demo/products/v2` routes. Local and self-hosted installations can also
-check validated public HTTPS endpoints. The hosted demo shows deterministic
-results; live AI explanation requests are available only in local development.
+The web app is the hosted demo and a place to inspect saved check history. It runs the same checker against two built-in demo routes. Live AI explanations are available only in local development.
 
-To try the breaking-change workflow:
+To see a breaking change:
 
-1. Choose **Original response v1**, then click **Run check**. The version shortcuts save the target; **Edit endpoint** opens the full configuration form.
-2. If the shared demo currently uses a different baseline, click **Accept as new baseline** and run `/v1` again.
-3. Confirm that the latest recorded check is `Pass` with `0 changes found`.
-4. Choose **Changed response v2**, then click **Run check** again.
-5. Confirm that the latest recorded check is `Fail` with `3 changes found`. The detected changes should include:
+1. Choose **Original response v1** and click **Run check**. The result should be `Pass` with `0 changes found`. If the shared demo currently uses a different baseline, click **Accept as new baseline** and run v1 again.
+2. Choose **Changed response v2** and click **Run check**. The result should be `Fail` with `3 changes found`: `price` changed from number to string, `title` is missing, and `name` was added.
+3. Click **Accept as new baseline** after reviewing the changes.
+4. Click **Run check** again. The new check passes with `0` changes, and the earlier failed check stays in the history.
 
-   - `price` changed from number to string
-   - `title` is missing
-   - `name` was added
-6. Click **Accept as new baseline** after reviewing the detected changes.
-7. Confirm that the existing failed check remains in the history, then click **Run check** again. The new check should pass with `0` changes because `/v2` is now the expected contract.
-
-The comparison workspace places detected changes directly above the saved
-baseline and latest recorded response. Use the **Response / Schema** switch to
-inspect either view. On smaller screens, changes become stacked cards and the
-response panels stack vertically. Long JSON scrolls within each panel; previews
-are limited to 200 lines and 2,000 characters per line.
-
-Response and schema panels show the baseline source URL and the latest checked
-URL separately. Selecting v1 or v2 changes the next check target, not the saved
-baseline. Capturing or accepting a baseline records its source; older baselines
-show "Source not recorded" rather than guessing from the configured endpoint.
-
-Each new check records its target URL. Editing an endpoint keeps the old result
-and shows a warning until the target matches or a new check is run. Older checks
-without a recorded target are labelled explicitly. The table describes the
-baseline **at the time of the check**; the baseline JSON panel shows the **current
-saved contract**, which can change after acceptance.
+The full walkthrough and a description of the comparison screen are in [docs/web-app.md](docs/web-app.md).
 
 ## Video Walkthrough
 
@@ -145,205 +118,11 @@ The MVP is intentionally lightweight:
 - detect missing fields, new fields, and type changes
 - explain what changed in readable language
 
-## How This Differs From Postman
+ContractLens is not trying to replace Postman or other API platforms. It is intentionally narrower: a quick response-shape check that needs no hand-written schema.
 
-Postman is a full API platform for designing, testing, documenting, monitoring, and governing APIs.
+## How it works
 
-ContractLens is not trying to replace Postman. It is intentionally narrower: a lightweight response-shape drift detector for frontend and full-stack developers who want a quick sanity check without manually writing schemas or setting up a full API testing workflow.
-
-The key product difference is automatic baseline capture from a live response. ContractLens focuses on:
-
-- response-shape drift
-- frontend-breaking changes
-- deterministic TypeScript comparison logic
-- readable impact explanations
-- optional local AI explanations built on top of detected diffs
-
-## Current Status
-
-ContractLens has a working database-backed demo. The seeded endpoint can use a
-live response as its baseline, run the same contract against a later response,
-and keep the result in PostgreSQL so it is still visible after a page reload.
-
-What works today:
-
-- `inferSchema()` converts JSON values into a small schema representation.
-- `compareSchemas()` handles nested objects, array item schemas, null changes,
-  and object/array/primitive type changes.
-- Missing fields and type changes are marked as breaking. New fields are kept as
-  informational changes.
-- The endpoint run route saves baselines, PASS/FAIL results, response schemas,
-  readable diffs, and useful error records.
-- Local and self-hosted installations can check validated public HTTPS URLs.
-  Private and loopback targets are blocked, redirects are checked again, and
-  requests have a timeout and response-size limit. The public hosted demo is
-  restricted to its two built-in demo routes.
-- The homepage reads the demo project, endpoint configuration, latest result,
-  response data, and five most recent checks from PostgreSQL. Database access
-  stays in the server page; the interactive dashboard receives that saved data.
-- Save, run, and acceptance controls coordinate their pending state until the
-  saved API result is displayed. Unsaved edits block running a check, and a result from a
-  different target cannot be accepted through the dashboard.
-- A reviewed PASS or FAIL result can be explicitly accepted as the new baseline
-  without rewriting the status of earlier checks.
-- GitHub Actions runs Vitest, ESLint, the production build, and Playwright on
-  pushes and pull requests.
-- Playwright uses an isolated PostgreSQL service in CI and covers the persisted
-  v1 PASS -> v2 FAIL -> accept v2 -> v2 PASS journey through Chromium.
-- Every persisted endpoint run emits a structured summary containing its run ID,
-  endpoint ID, status, duration, and diff count.
-- A local-development-only explanation API can generate and save an explanation
-  for a stored FAIL run. It reads the saved diffs, sends only selected diff fields
-  through Vercel AI Gateway, and leaves the saved PASS/FAIL status unchanged.
-  The dashboard offers **Explain this result** for an unexplained FAIL run and
-  displays the saved explanation beside the detected changes, including after
-  a reload. The route and model helper have mocked tests, and the local v1 to
-  v2 flow has been exercised with a live Gateway call.
-- `compareResponses()` wraps the engine and returns a verdict, counts and
-  diffs. `npm run compare` runs it on two saved JSON files with exit codes
-  `0`, `1` and `2`.
-- `examples/products-consumer` is a small example consumer with v1 and v2
-  fixtures and one focused test that can run against either response.
-- The `api-change-investigation` Claude Code skill runs the compare command,
-  searches a consumer folder, optionally runs a test against both responses,
-  and labels each changed field with its evidence.
-- `docs/skill-comparison` records the same example investigated with and
-  without the skill, three runs each.
-
-Still to do:
-
-- Complete a targeted keyboard, visible-focus, screen-reader announcement,
-  narrow-viewport, long-JSON, and slow/failing-operation audit.
-- Record the skill workflow and link it here.
-- Try the skill on a real consumer codebase.
-
-## Core Engine
-
-The core engine lives in `lib/contractlens`.
-
-```text
-lib/contractlens/
-  types.ts
-  infer-schema.ts
-  compare-schemas.ts
-  format-diff.ts
-  compare-responses.ts
-  __tests__/
-```
-
-### `inferSchema()`
-
-`inferSchema()` takes real API response data and returns a simplified schema shape.
-
-Example:
-
-```ts
-inferSchema({
-  id: "p_123",
-  title: "Nike Hoodie",
-  price: 89.99,
-});
-```
-
-Returns:
-
-```ts
-{
-  id: "string",
-  title: "string",
-  price: "number",
-}
-```
-
-### `compareSchemas()`
-
-`compareSchemas()` compares an expected baseline schema against a latest actual schema.
-
-Example:
-
-```ts
-compareSchemas(
-  { id: "string", title: "string", price: "number" },
-  { id: "string", name: "string", price: "string" },
-);
-```
-
-Returns:
-
-```ts
-[
-  { type: "MISSING_FIELD", path: "title", severity: "breaking" },
-  {
-    type: "TYPE_CHANGED",
-    path: "price",
-    severity: "breaking",
-    from: "number",
-    to: "string",
-  },
-  { type: "NEW_FIELD", path: "name", severity: "info" },
-]
-```
-
-### `formatDiff()`
-
-`formatDiff()` turns structured diffs into readable messages.
-
-Example:
-
-```ts
-formatDiff([
-  { type: "MISSING_FIELD", path: "title", severity: "breaking" },
-]);
-```
-
-Returns:
-
-```ts
-["`title` is missing"]
-```
-
-### `compareResponses()`
-
-`compareResponses()` takes two parsed responses, runs the functions above, and summarises the result. The compare command and the skill both use it.
-
-Example:
-
-```ts
-compareResponses({ price: 89.99 }, { price: "89.99" });
-```
-
-Returns:
-
-```ts
-{
-  verdict: "breaking",
-  counts: { breaking: 1, info: 0, total: 1 },
-  diffs: [
-    {
-      type: "TYPE_CHANGED",
-      path: "price",
-      severity: "breaking",
-      from: "number",
-      to: "string",
-    },
-  ],
-}
-```
-
-## Architecture Notes
-
-### Core engine
-
-The core engine is intentionally pure TypeScript. It does not depend on React, Next.js, Prisma, a database, or AI.
-
-This separation keeps the most important business logic:
-
-- easier to test
-- easier to reason about
-- reusable by the web app, API routes, and the compare command
-- independent from presentation and persistence concerns
-
-The pipeline is:
+The checker is pure TypeScript. It does not depend on React, Next.js, a database or AI.
 
 ```text
 real API response
@@ -355,99 +134,10 @@ real API response
   -> readable messages
 ```
 
-Unit tests verify each function in isolation, and an integration test verifies the full engine flow from real response data to formatted diff messages.
+Deterministic code decides what changed and whether a change is breaking. AI never decides pass or fail. In the web app it explains possible impact; in the skill it searches the consuming code and reports its evidence.
 
-### Run-check request flow
-
-When a user runs an endpoint check, the request passes through the browser,
-server, core engine, and database before the updated result is rendered.
-
-```text
-Browser
-  -> User clicks Run check and the client sends a POST request
-  -> Next.js route loads the endpoint configuration through Prisma
-  -> Route validates and safely fetches the configured API
-  -> Core engine infers the schema and compares it when a baseline exists
-  -> Prisma saves the TestRun in PostgreSQL
-  -> Route writes a structured log and returns a response
-  -> Client validates and renders the persisted result returned by the API
-  -> Dashboard updates status, differences, and history together
-  -> Reloading reads the saved state from PostgreSQL again
-```
-
-### Baseline-acceptance request flow
-
-Baseline changes are explicit. ContractLens does not automatically replace the
-expected contract when a check fails.
-
-```text
-Browser sends the reviewed TestRun ID
-  -> Baseline route verifies the run belongs to the endpoint
-  -> Route copies the stored response and detected schema to the endpoint
-  -> Previous TestRun records remain unchanged
-  -> Client displays the saved baseline returned by the API
-  -> A new check compares against the accepted baseline
-```
-
-## Engineering Trade-offs
-
-ContractLens intentionally keeps the MVP narrow. These decisions balance
-security, predictable behaviour, and implementation complexity.
-
-| Decision | Benefit | Cost |
-| --- | --- | --- |
-| Simplified schema model | Inspecting the first array item keeps schema inference understandable, testable, and predictable for homogeneous collections. | Differences in later items are not represented, so heterogeneous arrays can produce false passes. |
-| Deterministic PASS/FAIL | The same schemas always produce reproducible results that are straightforward to test, debug, and trust across environments. | The engine cannot interpret business context or make flexible, case-by-case judgements without an explicit rule. |
-| Restricted endpoint fetching | Public HTTPS validation, redirect checks, a five-second timeout, a 1 MiB limit, and JSON-only responses reduce SSRF risk and limit server resource use. | Legitimate APIs may be excluded when they are private, slow, larger than 1 MiB, or return a non-JSON response. |
-| Seeded shared demo | Visitors can try the complete workflow immediately without creating an account or configuring a project. | State is shared between visitors, history is not private, and another visitor can change the endpoint currently shown by the demo. |
-
-A reset action, temporary per-session data, or authenticated project ownership
-could provide stronger isolation later, but those features are outside the
-current MVP.
-
-## Test Strategy
-
-ContractLens uses several test layers because no single test can cover every
-part of the system.
-
-| Layer | Tool or environment | What it checks |
-| --- | --- | --- |
-| Unit tests | Vitest | Exercises the pure schema engine and HTTP safety helpers with focused inputs and expected outputs. |
-| Route tests | Vitest with mocked Prisma and fetch | Verifies the run route's control flow, persisted statuses, errors, diffs, and structured logs without using a real database or network request. |
-| Browser E2E | Playwright with PostgreSQL | Runs the v1 PASS, v2 FAIL, explicit baseline acceptance, and v2 PASS workflow through Chromium against an isolated PostgreSQL database locally and in CI. |
-| Continuous integration | GitHub Actions | Runs Vitest, ESLint, the production build, and Playwright on clean machines for pushes and pull requests. |
-| Production verification | Vercel runtime and logs | Manually confirms that the deployed application loads, reaches the production database, and produces no new connection warnings. |
-
-## Change Classification
-
-Breaking changes:
-
-- Removed field
-- Type changed
-
-Informational changes:
-
-- New field added
-
-The product treats new fields as informational because existing frontend code can usually ignore extra response fields.
-
-## AI Design Principle
-
-AI does not decide whether a contract passes or fails.
-
-The deterministic schema engine detects missing fields, new fields, and type
-changes. The local-only explanation API uses the AI SDK through Vercel AI Gateway
-to explain a saved FAIL run's already-detected diffs in plain English. The
-dashboard shows the explanation beside the detected changes and reads it again
-after reload. The hosted demo does not allow live AI generation.
-
-This keeps correctness in code and uses AI for communication.
-
-The explanation in the web app describes possible impact. It is not a confirmed
-failure: a schema-level breaking change does not prove that a particular
-frontend fails. "Confirmed broken" appears only in the investigation skill's
-report, and only when a test passes with the old response and fails with the
-new one.
+- [docs/engine.md](docs/engine.md): the engine functions, with examples, and how changes are classified.
+- [docs/architecture.md](docs/architecture.md): request flows, trade-offs, test strategy and the AI design principle.
 
 ## Known Limitations
 
@@ -473,131 +163,52 @@ new one.
   It searches only the folder it is given, and it can confirm a break only
   when it is given a test command.
 
-## Tech Stack
+## Getting started
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- Vitest
-- Playwright
-- ESLint
-- Prisma and PostgreSQL schema
-- Vercel AI SDK for the local-only explanation backend
-- GitHub Actions
-- tsx for the local compare command
-- A Claude Code skill for the investigation workflow
-
-## Development
-
-Install dependencies:
+The compare command, the example consumer and the skill need only Node.js and the dependencies:
 
 ```bash
 npm install
 ```
 
-Create the PostgreSQL database used by the application and copy the safe
-configuration template:
-
 ```bash
-createdb contractlens
-cp .env.example .env
+npm run compare -- examples/products-consumer/fixtures/product-v1.json examples/products-consumer/fixtures/product-v2.json
 ```
-
-Replace `YOUR_POSTGRES_USER` in `.env` with your local PostgreSQL user. The
-private `.env` file is ignored by Git; `.env.example` documents the required
-variables without containing real credentials.
-
-For local AI explanation requests, set `AI_GATEWAY_API_KEY` in your private
-`.env` file. Leave it blank if you are only using deterministic checks. Keep
-the key on the server; it is never needed in browser code. The explanation API
-is enabled only when `NODE_ENV` is `development` and `HOSTED_DEMO_MODE` is
-`"false"`. A missing key or failed model call leaves the saved check intact and
-returns a retryable explanation error. To try it locally, capture the v1
-baseline, run v2 to save a FAIL result, then click **Explain this result** below
-the detected changes. The card shows the possible frontend impact and what to
-check next. Reload the page to confirm the explanation was saved.
-
-Leave `HOSTED_DEMO_MODE="false"` for local or self-hosted use. In this mode,
-ContractLens can check supported public HTTPS endpoints after applying its
-existing URL-safety rules. Set it to `"true"` only for the public hosted demo,
-where requests are restricted to `/api/demo/products/v1` and
-`/api/demo/products/v2`.
-
-Apply the existing migrations and seed the Demo Project:
-
-```bash
-npx prisma migrate deploy
-npm run db:seed
-```
-
-Run the development server:
-
-```bash
-npm run dev
-```
-
-Install the Chromium browser used by Playwright:
-
-```bash
-npx playwright install chromium
-```
-
-Create the isolated local database used by Playwright:
-
-```bash
-createdb contractlens_e2e
-cp .env.e2e.example .env.e2e
-```
-
-Replace `YOUR_POSTGRES_USER` in `.env.e2e` with your local PostgreSQL user.
-Playwright refuses to start unless `DATABASE_URL` points to a database named
-`contractlens_e2e`.
-
-Run tests:
 
 ```bash
 npm test
 ```
 
-Run browser end-to-end tests:
+The web app also needs PostgreSQL. Database setup, environment variables, migrations and the browser tests are in [docs/development.md](docs/development.md).
 
-```bash
-npm run test:e2e
-```
+## Status and next steps
 
-This command resets `contractlens_e2e`, applies all migrations, seeds the demo
-data, and starts its own application server at `127.0.0.1:3100`. Stop any
-development server running from this checkout before starting the E2E suite.
+Working today:
 
-Run tests in watch mode:
+- The schema engine, the compare command and the example consumer, covered by unit tests.
+- The investigation skill, run on the example consumer.
+- The database-backed web app: capture a baseline, run a check, review the changes, accept a new baseline, and keep the history.
+- GitHub Actions runs the unit tests, lint, the production build and the browser tests on every push and pull request.
 
-```bash
-npm run test:watch
-```
+The detailed list is in [docs/architecture.md](docs/architecture.md#current-status).
 
-Run lint:
+Next:
 
-```bash
-npm run lint
-```
+- Complete a targeted keyboard, visible-focus, screen-reader announcement,
+  narrow-viewport, long-JSON, and slow/failing-operation audit.
+- Record the skill workflow and link it here.
+- Try the skill on a real consumer codebase.
 
-Compare two saved responses:
+## How this was built
 
-```bash
-npm run compare -- examples/products-consumer/fixtures/product-v1.json examples/products-consumer/fixtures/product-v2.json
-```
+- I wrote the schema engine and the web app myself, using an AI assistant as a mentor for explanations and review.
+- The compare command, the example consumer, the investigation skill, the comparison and this documentation were implemented with Claude Code. Those commits are co-authored by Claude.
+- For that work I made the design decisions and approved each plan before it was built: the four report labels, which demo field goes unused, leaving `title` untested, the rule that only a failing test confirms a break, and publishing the comparison as it came out.
 
-Run the example consumer's test against the v2 response. This is expected to
-fail, because v2 sends `price` as a string:
+## More documentation
 
-```bash
-PRODUCT_FIXTURE=examples/products-consumer/fixtures/product-v2.json npx vitest run examples/products-consumer
-```
-
-## Roadmap
-
-1. Complete a targeted keyboard, visible-focus, screen-reader announcement,
-   narrow-viewport, long-JSON, and slow/failing-operation audit.
-2. Record the skill workflow and link it at the top of this README.
-3. Try the skill on a real consumer codebase.
+- [docs/engine.md](docs/engine.md): engine functions and change classification
+- [docs/architecture.md](docs/architecture.md): architecture, trade-offs, test strategy and detailed status
+- [docs/web-app.md](docs/web-app.md): the full web app demo walkthrough
+- [docs/development.md](docs/development.md): full local setup and tech stack
+- [docs/skill-comparison](docs/skill-comparison/README.md): the skill compared with plain Claude
