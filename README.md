@@ -1,48 +1,85 @@
 # ContractLens
 
-ContractLens is a lightweight developer tool for detecting breaking API response-shape changes.
+ContractLens helps you find out whether an API response change breaks the code that uses it.
 
-The goal is simple: capture the current shape of an API response as a baseline contract, then compare future responses against that baseline. ContractLens uses deterministic TypeScript logic to detect what changed. In local development, an optional AI action explains the possible frontend impact in plain English.
+It has two parts:
 
-> Deterministic code detects the API changes. AI explains the impact.
+- A tested, deterministic checker that compares two JSON responses and reports what changed and whether each change is breaking.
+- A Claude Code skill that runs the checker, searches the code that uses the response, and reports what is proven to break and what only might.
 
-## Video Walkthrough
+A web app shows the same checker with saved history.
 
-[Watch the ContractLens walkthrough](https://www.loom.com/share/789d89b95aa64d328a32f2c0d16136d5)
+> Deterministic code detects the change. AI investigates possible impact and shows its evidence.
 
-The recording demonstrates local development: comparing the built-in responses,
-generating an AI explanation, reloading saved results, and accepting a new
-baseline. Live AI generation is disabled in the public hosted demo.
+## Investigate an API change in Claude Code
 
-## Why ContractLens?
+The skill lives in `.claude/skills/api-change-investigation/`. Open this repository in Claude Code and give it:
 
-Frontend developers often depend on API responses they do not fully control. A small backend response change, such as removing a field or changing a number into a string, can silently break UI rendering, sorting, formatting, or calculations.
+1. the old response file (the baseline);
+2. the new response file;
+3. the folder of code that uses the response; and
+4. optionally, a test command with `{response}` where the response file path goes.
 
-ContractLens focuses on one narrow problem: detecting response-shape drift quickly from real API responses.
+To try it on the included example, run `npm install`, then paste this prompt:
 
-The MVP is intentionally lightweight:
+```text
+Use the api-change-investigation skill. Baseline: examples/products-consumer/fixtures/product-v1.json. Latest: examples/products-consumer/fixtures/product-v2.json. Consumer folder: examples/products-consumer. Test command: PRODUCT_FIXTURE={response} npx vitest run examples/products-consumer
+```
 
-- provide an endpoint
-- capture the current response shape as a baseline
-- run the endpoint again later
-- detect missing fields, new fields, and type changes
-- explain what changed in readable language
+The report for that example:
 
-## How This Differs From Postman
+| Field | Change | Schema verdict | Finding | Evidence |
+| --- | --- | --- | --- | --- |
+| `price` | number -> string | breaking | Confirmed broken | the test passes with v1 and fails with v2: `product.price.toFixed is not a function` at `format-product.ts:12` |
+| `title` | removed | breaking | May be affected | read at `format-product.ts:12` |
+| `inStock` | boolean -> string | breaking | No usage found | no reads in `examples/products-consumer` |
+| `name` | added | info | Observed change only | none needed |
 
-Postman is a full API platform for designing, testing, documenting, monitoring, and governing APIs.
+The checker calls three of these changes breaking. Only one is proven to break this consumer. Each changed field gets exactly one label:
 
-ContractLens is not trying to replace Postman. It is intentionally narrower: a lightweight response-shape drift detector for frontend and full-stack developers who want a quick sanity check without manually writing schemas or setting up a full API testing workflow.
+- **Confirmed broken:** a test passes with the old response and fails with the new one, and the error names the field. The test output is quoted.
+- **May be affected:** code reads the field, with file and line, but no test proves a break.
+- **No usage found:** the change is breaking by the schema rule, but no code in the folder reads the field.
+- **Observed change only:** an informational change, such as a new field.
 
-The key product difference is automatic baseline capture from a live response. ContractLens focuses on:
+The skill is read-only. It never edits files, writes a test, changes a baseline, treats a removed field and a new field as a rename, or reports a confirmed break without test output. Without a test command it never says "confirmed broken".
 
-- response-shape drift
-- frontend-breaking changes
-- deterministic TypeScript comparison logic
-- readable impact explanations
-- optional local AI explanations built on top of detected diffs
+This example uses saved response files. It is not live monitoring, and the skill has so far been run only on this example consumer.
+
+## Compare two responses from the terminal
+
+The checker also runs on its own. It needs no web app, database or model key.
+
+```bash
+npm run compare -- examples/products-consumer/fixtures/product-v1.json examples/products-consumer/fixtures/product-v2.json
+```
+
+```text
+Breaking changes detected
+3 breaking, 1 info
+  [breaking] `title` is missing
+  [breaking] `price` changed from number to string
+  [breaking] `inStock` changed from boolean to string
+  [info] `name` was added
+```
+
+Add `--json` for machine-readable output. Exit codes:
+
+| Code | Meaning |
+| --- | --- |
+| `0` | no breaking changes, including identical responses |
+| `1` | breaking changes |
+| `2` | invalid input: a missing file, invalid JSON, or wrong arguments |
+
+## With and without the skill
+
+Claude can investigate this change without the skill, so the same example was run in fresh Claude Code sessions both ways, three times each. Without the skill, Claude already ran the test against both responses, cited file and line, and gave consistent answers. The difference in these runs was that the skill separated proven breaks from possible ones, did not describe `title` and `name` as a rename, and used the same report layout every time.
+
+This is a small sample on one example, not evidence that the skill is better in general. The method, prompts, results and limits are in [docs/skill-comparison](docs/skill-comparison/README.md).
 
 ## Live Demo
+
+The web app is the hosted demo and a place to inspect saved check history.
 
 [Open the deployed ContractLens demo](https://contractlens-iota.vercel.app/)
 
@@ -81,6 +118,46 @@ and shows a warning until the target matches or a new check is run. Older checks
 without a recorded target are labelled explicitly. The table describes the
 baseline **at the time of the check**; the baseline JSON panel shows the **current
 saved contract**, which can change after acceptance.
+
+## Video Walkthrough
+
+[Watch the web app walkthrough](https://www.loom.com/share/789d89b95aa64d328a32f2c0d16136d5)
+
+The recording demonstrates local development: comparing the built-in responses,
+generating an AI explanation, reloading saved results, and accepting a new
+baseline. Live AI generation is disabled in the public hosted demo.
+
+A recording of the skill workflow is not linked yet.
+
+## Why ContractLens?
+
+Frontend developers often depend on API responses they do not fully control. A small backend response change, such as removing a field or changing a number into a string, can silently break UI rendering, sorting, formatting, or calculations.
+
+ContractLens focuses on one narrow problem: detecting response-shape drift quickly from real API responses.
+
+It matters most to people who consume an API owned by another team or company. They often never see the provider's diff, and may not know which of their own code depends on a changed field.
+
+The MVP is intentionally lightweight:
+
+- provide an endpoint
+- capture the current response shape as a baseline
+- run the endpoint again later
+- detect missing fields, new fields, and type changes
+- explain what changed in readable language
+
+## How This Differs From Postman
+
+Postman is a full API platform for designing, testing, documenting, monitoring, and governing APIs.
+
+ContractLens is not trying to replace Postman. It is intentionally narrower: a lightweight response-shape drift detector for frontend and full-stack developers who want a quick sanity check without manually writing schemas or setting up a full API testing workflow.
+
+The key product difference is automatic baseline capture from a live response. ContractLens focuses on:
+
+- response-shape drift
+- frontend-breaking changes
+- deterministic TypeScript comparison logic
+- readable impact explanations
+- optional local AI explanations built on top of detected diffs
 
 ## Current Status
 
@@ -122,13 +199,23 @@ What works today:
   displays the saved explanation beside the detected changes, including after
   a reload. The route and model helper have mocked tests, and the local v1 to
   v2 flow has been exercised with a live Gateway call.
+- `compareResponses()` wraps the engine and returns a verdict, counts and
+  diffs. `npm run compare` runs it on two saved JSON files with exit codes
+  `0`, `1` and `2`.
+- `examples/products-consumer` is a small example consumer with v1 and v2
+  fixtures and one focused test that can run against either response.
+- The `api-change-investigation` Claude Code skill runs the compare command,
+  searches a consumer folder, optionally runs a test against both responses,
+  and labels each changed field with its evidence.
+- `docs/skill-comparison` records the same example investigated with and
+  without the skill, three runs each.
 
 Still to do:
 
 - Complete a targeted keyboard, visible-focus, screen-reader announcement,
   narrow-viewport, long-JSON, and slow/failing-operation audit.
-- Add a CLI after the web workflow is settled.
-- Record a short local walkthrough of the v1 to v2 check and saved explanation.
+- Record the skill workflow and link it here.
+- Try the skill on a real consumer codebase.
 
 ## Core Engine
 
@@ -140,6 +227,7 @@ lib/contractlens/
   infer-schema.ts
   compare-schemas.ts
   format-diff.ts
+  compare-responses.ts
   __tests__/
 ```
 
@@ -214,6 +302,34 @@ Returns:
 ["`title` is missing"]
 ```
 
+### `compareResponses()`
+
+`compareResponses()` takes two parsed responses, runs the functions above, and summarises the result. The compare command and the skill both use it.
+
+Example:
+
+```ts
+compareResponses({ price: 89.99 }, { price: "89.99" });
+```
+
+Returns:
+
+```ts
+{
+  verdict: "breaking",
+  counts: { breaking: 1, info: 0, total: 1 },
+  diffs: [
+    {
+      type: "TYPE_CHANGED",
+      path: "price",
+      severity: "breaking",
+      from: "number",
+      to: "string",
+    },
+  ],
+}
+```
+
 ## Architecture Notes
 
 ### Core engine
@@ -224,7 +340,7 @@ This separation keeps the most important business logic:
 
 - easier to test
 - easier to reason about
-- reusable by the future web app, API routes, and CLI
+- reusable by the web app, API routes, and the compare command
 - independent from presentation and persistence concerns
 
 The pipeline is:
@@ -327,6 +443,12 @@ after reload. The hosted demo does not allow live AI generation.
 
 This keeps correctness in code and uses AI for communication.
 
+The explanation in the web app describes possible impact. It is not a confirmed
+failure: a schema-level breaking change does not prove that a particular
+frontend fails. "Confirmed broken" appears only in the investigation skill's
+report, and only when a test passes with the old response and fails with the
+new one.
+
 ## Known Limitations
 
 - Array schemas use the first item as their representative shape. Empty arrays
@@ -345,8 +467,11 @@ This keeps correctness in code and uses AI for communication.
 - Production observability currently consists of structured per-run summaries;
   metrics and alerting are not implemented.
 - Live AI explanations require local development and a configured Gateway key;
-  the public hosted demo does not offer the Explain action. The CLI is not
-  implemented.
+  the public hosted demo does not offer the Explain action.
+- The compare command reads saved JSON files. It does not fetch URLs.
+- The investigation skill has been run only on the included example consumer.
+  It searches only the folder it is given, and it can confirm a break only
+  when it is given a test command.
 
 ## Tech Stack
 
@@ -360,10 +485,8 @@ This keeps correctness in code and uses AI for communication.
 - Prisma and PostgreSQL schema
 - Vercel AI SDK for the local-only explanation backend
 - GitHub Actions
-
-Planned later:
-
-- A small CLI
+- tsx for the local compare command
+- A Claude Code skill for the investigation workflow
 
 ## Development
 
@@ -459,10 +582,22 @@ Run lint:
 npm run lint
 ```
 
+Compare two saved responses:
+
+```bash
+npm run compare -- examples/products-consumer/fixtures/product-v1.json examples/products-consumer/fixtures/product-v2.json
+```
+
+Run the example consumer's test against the v2 response. This is expected to
+fail, because v2 sends `price` as a string:
+
+```bash
+PRODUCT_FIXTURE=examples/products-consumer/fixtures/product-v2.json npx vitest run examples/products-consumer
+```
+
 ## Roadmap
 
 1. Complete a targeted keyboard, visible-focus, screen-reader announcement,
    narrow-viewport, long-JSON, and slow/failing-operation audit.
-2. Consider a minimal CLI with readable diffs and exit code `1` for breaking
-   changes.
-3. Record a short local walkthrough of the AI explanation flow and link it here.
+2. Record the skill workflow and link it at the top of this README.
+3. Try the skill on a real consumer codebase.
