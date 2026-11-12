@@ -44,7 +44,7 @@ The checker calls three of these changes breaking. Only one is proven to break t
 
 The skill is read-only. It never edits files, writes a test, changes a baseline, treats a removed field and a new field as a rename, or reports a confirmed break without test output. Without a test command it never says "confirmed broken".
 
-This example uses saved response files. It is not live monitoring, and the skill has so far been run only on this example consumer.
+This example uses saved response files. It is not live monitoring. The skill has been run on this example and on one real codebase, described below.
 
 ## Compare two responses from the terminal
 
@@ -75,7 +75,9 @@ Add `--json` for machine-readable output. Exit codes:
 
 Claude can investigate this change without the skill, so the same example was run in fresh Claude Code sessions both ways, three times each. Without the skill, Claude already ran the test against both responses, cited file and line, and gave consistent answers. The difference in these runs was that the skill separated proven breaks from possible ones, did not describe `title` and `name` as a rename, and used the same report layout every time.
 
-This is a small sample on one example, not evidence that the skill is better in general. The method, prompts, results and limits are in [docs/skill-comparison](docs/skill-comparison/README.md).
+The same comparison was then run on real code, this project's own web app, with a made-up change to a real response. There, plain Claude gave the more useful answer: it read the validation code and correctly said which changes break it, while the skill's rules left a real break and a harmless change under the same "may be affected" label.
+
+Both are small samples, three runs per side, and neither is evidence about the skill in general. The methods, prompts, results and limits are in [docs/skill-comparison](docs/skill-comparison/README.md) and [docs/real-codebase-trial](docs/real-codebase-trial/README.md).
 
 ## Live Demo
 
@@ -159,9 +161,13 @@ Deterministic code decides what changed and whether a change is breaking. AI nev
 - Live AI explanations require local development and a configured Gateway key;
   the public hosted demo does not offer the Explain action.
 - The compare command reads saved JSON files. It does not fetch URLs.
-- The investigation skill has been run only on the included example consumer.
-  It searches only the folder it is given, and it can confirm a break only
-  when it is given a test command.
+- The investigation skill has been run only on the included example consumer
+  and on this project's own web app. It searches only the folder it is given,
+  and it can confirm a break only when it is given a test command.
+- On the web app trial the skill could not tell a change the code rejects
+  from one the code tolerates, and could not confirm a second break hidden
+  behind the first failing test. See
+  [docs/real-codebase-trial](docs/real-codebase-trial/README.md).
 
 ## Getting started
 
@@ -186,7 +192,7 @@ The web app also needs PostgreSQL. Database setup, environment variables, migrat
 Working today:
 
 - The schema engine, the compare command and the example consumer, covered by unit tests.
-- The investigation skill, run on the example consumer.
+- The investigation skill, run on the example consumer and on this project's own web app.
 - The database-backed web app: capture a baseline, run a check, review the changes, accept a new baseline, and keep the history.
 - GitHub Actions runs the unit tests, lint, the production build and the browser tests on every push and pull request.
 
@@ -197,7 +203,7 @@ Next:
 - Complete a targeted keyboard, visible-focus, screen-reader announcement,
   narrow-viewport, long-JSON, and slow/failing-operation audit.
 - Record the skill workflow and link it here.
-- Try the skill on a real consumer codebase.
+- Improve the skill using the web app trial: test one changed field at a time, and separate rejected values from tolerated ones.
 
 ## How this was built
 
@@ -211,4 +217,5 @@ Next:
 - [docs/architecture.md](docs/architecture.md): architecture, trade-offs, test strategy and detailed status
 - [docs/web-app.md](docs/web-app.md): the full web app demo walkthrough
 - [docs/development.md](docs/development.md): full local setup and tech stack
-- [docs/skill-comparison](docs/skill-comparison/README.md): the skill compared with plain Claude
+- [docs/skill-comparison](docs/skill-comparison/README.md): the skill compared with plain Claude on the example
+- [docs/real-codebase-trial](docs/real-codebase-trial/README.md): the same comparison on this project's web app

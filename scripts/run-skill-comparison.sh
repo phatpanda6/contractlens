@@ -18,24 +18,38 @@ REPO="$(git rev-parse --show-toplevel)"
 mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"
 
-V1="examples/products-consumer/fixtures/product-v1.json"
-V2="examples/products-consumer/fixtures/product-v2.json"
-FOLDER="examples/products-consumer"
+# The inputs default to the demo. Set these variables to try other files:
+#   V1, V2     baseline and latest response files
+#   FOLDER     the consumer folder
+#   API_NAME   how the plain prompt names the API
+#   TEST_CMD   test command, with {response} where the file path goes
+V1="${V1:-examples/products-consumer/fixtures/product-v1.json}"
+V2="${V2:-examples/products-consumer/fixtures/product-v2.json}"
+FOLDER="${FOLDER:-examples/products-consumer}"
+API_NAME="${API_NAME:-products}"
+# Kept in its own variable: a "}" inside ${VAR:-default} would end the default early.
+DEFAULT_TEST_CMD='PRODUCT_FIXTURE={response} npx vitest run examples/products-consumer'
+TEST_CMD="${TEST_CMD:-$DEFAULT_TEST_CMD}"
 
-PROMPT_WITHOUT="The products API response changed. Old response: $V1. New response: $V2. Does this change break the code in $FOLDER?"
-PROMPT_WITH="Use the api-change-investigation skill. Baseline: $V1. Latest: $V2. Consumer folder: $FOLDER. Test command: PRODUCT_FIXTURE={response} npx vitest run $FOLDER"
+PROMPT_WITHOUT="The $API_NAME API response changed. Old response: $V1. New response: $V2. Does this change break the code in $FOLDER?"
+PROMPT_WITH="Use the api-change-investigation skill. Baseline: $V1. Latest: $V2. Consumer folder: $FOLDER. Test command: $TEST_CMD"
 
-# Builds a clean copy of the committed repo in $2 for side $1.
+# Builds a clean copy of the repo's working tree in $2 for side $1.
 make_copy() {
   local side="$1" dest="$2"
   rm -rf "$dest"
   mkdir -p "$dest"
-  # Only committed files, so local notes and build output are left out.
-  git -C "$REPO" archive HEAD | tar -x -C "$dest"
+  # Tracked files plus new files that are not ignored, so local notes,
+  # dependencies and build output are left out.
+  (cd "$REPO" && git ls-files -co --exclude-standard -z | tar --null -T - -cf -) | tar -x -C "$dest"
   # These files describe the labels and the expected result.
-  rm -f "$dest/AGENTS.md" "$dest/CLAUDE.md" "$dest/HANDOFF.md"
-  # The write-up of earlier runs would give the answers away too.
-  rm -rf "$dest/docs/skill-comparison"
+  rm -f "$dest/AGENTS.md" "$dest/CLAUDE.md" "$dest/HANDOFF.md" "$dest/README.md"
+  # Write-ups and saved answers from earlier runs would give the answers away.
+  # Fixture files under docs/ are kept.
+  if [ -d "$dest/docs" ]; then
+    find "$dest/docs" -name '*.md' -delete
+    find "$dest/docs" -type d -name runs -prune -exec rm -rf {} +
+  fi
   if [ "$side" = "without" ]; then
     rm -rf "$dest/.claude"
   fi
@@ -58,7 +72,7 @@ run_one() {
     --output-format stream-json --verbose \
     --allowedTools "Bash" "Read" "Grep" "Glob" "Skill" \
     ${MODEL:+--model "$MODEL"} \
-    > "$OUT/$name.jsonl" 2> "$OUT/$name.stderr") || echo "  $name exited with an error"
+    < /dev/null > "$OUT/$name.jsonl" 2> "$OUT/$name.stderr") || echo "  $name exited with an error"
 
   # Lists any file the session changed, added or removed.
   diff -rq "$pristine" "$copy" --exclude=node_modules > "$OUT/$name.changes" || true

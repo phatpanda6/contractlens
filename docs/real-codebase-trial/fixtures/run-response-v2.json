@@ -1,0 +1,67 @@
+{
+  "endpoint": {
+    "id": "cmqacyvdz00014m8ozfpq7y08",
+    "projectId": 4127,
+    "name": "Demo Products API",
+    "method": "GET",
+    "url": "/api/demo/products/v2",
+    "headers": null,
+    "baselineSchema": {
+      "id": "string",
+      "price": "number",
+      "title": "string",
+      "inStock": "boolean"
+    },
+    "baselineExample": {
+      "id": "p_123",
+      "price": 89.99,
+      "title": "Nike Hoodie",
+      "inStock": true
+    },
+    "baselineSourceUrl": {
+      "url": "/api/demo/products/v1",
+      "capturedAt": "2026-11-10T02:15:00.000Z"
+    },
+    "createdAt": "2026-06-12T03:19:54.983Z"
+  },
+  "testRun": {
+    "id": "cmwcvr9mc0001pb8orj5ea59s",
+    "endpointId": "cmqacyvdz00014m8ozfpq7y08",
+    "targetUrl": "/api/demo/products/v2",
+    "status": "FAIL",
+    "responseBody": {
+      "id": "p_123",
+      "name": "Nike Hoodie",
+      "price": "89.99",
+      "inStock": true
+    },
+    "detectedSchema": {
+      "id": "string",
+      "name": "string",
+      "price": "string",
+      "inStock": "boolean"
+    },
+    "diff": [
+      {
+        "to": "string",
+        "from": "number",
+        "path": "price",
+        "type": "TYPE_CHANGED",
+        "severity": "breaking"
+      },
+      {
+        "path": "title",
+        "type": "MISSING_FIELD",
+        "severity": "breaking"
+      },
+      {
+        "path": "name",
+        "type": "NEW_FIELD",
+        "severity": "info"
+      }
+    ],
+    "aiExplanation": "Summary: The API may now return price as a string, may remove the title field, and may add a name field, which could affect frontend rendering and formatting.\nCheck: Update the price parsing/formatting logic to handle price as a string instead of a number.\nCheck: Verify the UI behavior when title is missing from the response (e.g., fallback content, error handling).\nCheck: If name is present, confirm components read from name where appropriate and do not rely on title being available.",
+    "createdAt": 1794447579252,
+    "durationMs": 182
+  }
+}
