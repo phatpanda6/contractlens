@@ -11,9 +11,9 @@ export type CliResult = { exitCode: number; stdout: string; stderr: string };
 const USAGE = "Usage: npm run compare -- <baseline.json> <latest.json> [--json]";
 
 // Thrown for anything wrong with what the user gave us (as opposed to a bug).
-class InvalidInputError extends Error {}
+export class InvalidInputError extends Error {}
 
-function readJsonFile(path: string): unknown {
+export function readJsonFile(path: string): unknown {
   let text: string;
   try {
     text = readFileSync(path, "utf8");

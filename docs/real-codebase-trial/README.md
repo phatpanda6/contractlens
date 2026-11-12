@@ -139,3 +139,45 @@ confirm `createdAt` and show `errorMessage` passing.
   counted. It reached the same findings and also proved the `createdAt` break
   with a temporary file.
 - In the saved answers, local file paths are replaced with `<copy>`.
+
+## After the improvement
+
+The skill was then changed to test each changed field on its own. A new
+command, `npm run isolate`, writes one response file per change (the baseline
+with only that change applied), and the skill runs the test against each
+file. A fifth label, "Test still passes", was added, and the "error must name
+the field" rule was removed.
+
+The bar was set before the runs: in 3 of 3 fresh runs, match the answer key
+on all five fields, and back every "broken" and "test still passes" verdict
+with a test run on that field alone.
+
+Three fresh runs with the improved skill, same model (`claude-fable-5-2`),
+same prompt. Saved answers: [`runs-improved/`](runs-improved/).
+
+| Question | Plain Claude (earlier) | Skill before | Skill after |
+|---|---|---|---|
+| Matched the answer key on all five fields | 3 of 3 | 0 of 3 | 3 of 3 |
+| `createdAt` break shown by a test run | 0 of 3 (read from the code) | 0 of 3 | 3 of 3 |
+| `errorMessage` shown to pass a test on its own | 0 of 3 (read from the code) | 0 of 3 | 3 of 3 |
+| Said something was broken that is not | 0 of 3 | 0 of 3 | 0 of 3 |
+| Changed repository files | 0 of 3 | 0 of 3 | 0 of 3 |
+| Turns per run | 13, 12, 13 | 9, 9, 9 | 6, 9, 7 |
+
+The improved skill cleared the bar. It now reaches the same conclusions as
+plain Claude, and each one is backed by a test run on that field alone,
+including the second break that the full test run hides.
+
+What this does and does not show:
+
+- Plain Claude was already right on every field. The improvement adds proof,
+  not a different answer.
+- **The improvement was designed from this trial and then measured on the
+  same trial.** That makes this a check that the fix works, not an
+  independent test. A fair test needs a different codebase and change.
+- "Test still passes" depends on the test. The trial's test checks only that
+  the run is accepted, and all three runs said so.
+- Plain Claude's runs were not repeated, and one earlier setup-check run of
+  plain Claude also proved the `createdAt` break by making its own temporary
+  file.
+- Claude scored these runs too.

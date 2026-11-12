@@ -30,19 +30,22 @@ The report for that example:
 
 | Field | Change | Schema verdict | Finding | Evidence |
 | --- | --- | --- | --- | --- |
-| `price` | number -> string | breaking | Confirmed broken | the test passes with v1 and fails with v2: `product.price.toFixed is not a function` at `format-product.ts:12` |
-| `title` | removed | breaking | May be affected | read at `format-product.ts:12` |
-| `inStock` | boolean -> string | breaking | No usage found | no reads in `examples/products-consumer` |
+| `price` | number -> string | breaking | Confirmed broken | the test fails with only this field changed: `product.price.toFixed is not a function` at `format-product.ts:12` |
+| `title` | removed | breaking | Test still passes | read at `format-product.ts:12`; the test passes with only this change, but it checks only the price |
+| `inStock` | boolean -> string | breaking | No usage found | no reads in `examples/products-consumer`; the test passes with only this change |
 | `name` | added | info | Observed change only | none needed |
 
 The checker calls three of these changes breaking. Only one is proven to break this consumer. Each changed field gets exactly one label:
 
-- **Confirmed broken:** a test passes with the old response and fails with the new one, and the error names the field. The test output is quoted.
-- **May be affected:** code reads the field, with file and line, but no test proves a break.
+- **Confirmed broken:** a test passes with the old response and fails when only this field is changed. The test output is quoted.
+- **Test still passes:** code reads the field, and the test passes when only this field is changed. This proves only what that test checks.
+- **May be affected:** code reads the field, with file and line, but there is no test result for it.
 - **No usage found:** the change is breaking by the schema rule, but no code in the folder reads the field.
 - **Observed change only:** an informational change, such as a new field.
 
-The skill is read-only. It never edits files, writes a test, changes a baseline, treats a removed field and a new field as a rename, or reports a confirmed break without test output. Without a test command it never says "confirmed broken".
+The skill is read-only. It never edits files in the repository, writes a test, changes a baseline, treats a removed field and a new field as a rename, or reports a test result it did not run. Without a test command it never says "confirmed broken" or "test still passes".
+
+To test one field at a time, the skill uses `npm run isolate`, which writes one response file per change: the old response with only that change applied. A test that stops at its first failure can then still show a second break behind it.
 
 This example uses saved response files. It is not live monitoring. The skill has been run on this example and on one real codebase, described below.
 
@@ -76,6 +79,8 @@ Add `--json` for machine-readable output. Exit codes:
 Claude can investigate this change without the skill, so the same example was run in fresh Claude Code sessions both ways, three times each. Without the skill, Claude already ran the test against both responses, cited file and line, and gave consistent answers. The difference in these runs was that the skill separated proven breaks from possible ones, did not describe `title` and `name` as a rename, and used the same report layout every time.
 
 The same comparison was then run on real code, this project's own web app, with a made-up change to a real response. There, plain Claude gave the more useful answer: it read the validation code and correctly said which changes break it, while the skill's rules left a real break and a harmless change under the same "may be affected" label.
+
+The skill was then changed to test each changed field on its own. Re-run on the same trial, it matched the answer key in 3 of 3 runs, with a test run behind each verdict. Plain Claude had reached the same conclusions by reading the code, so the change adds proof, not a different answer. It was also measured on the trial it was designed from, which is a check that the fix works, not an independent test.
 
 Both are small samples, three runs per side, and neither is evidence about the skill in general. The methods, prompts, results and limits are in [docs/skill-comparison](docs/skill-comparison/README.md) and [docs/real-codebase-trial](docs/real-codebase-trial/README.md).
 
@@ -164,9 +169,11 @@ Deterministic code decides what changed and whether a change is breaking. AI nev
 - The investigation skill has been run only on the included example consumer
   and on this project's own web app. It searches only the folder it is given,
   and it can confirm a break only when it is given a test command.
-- On the web app trial the skill could not tell a change the code rejects
-  from one the code tolerates, and could not confirm a second break hidden
-  behind the first failing test. See
+- The skill's per-field results are only as good as the test it is given.
+  "Test still passes" means that one test passed, not that the change is safe.
+- The per-field step was designed from the web app trial and re-measured on
+  that same trial, not on new code. Changes inside arrays cannot be tested
+  one at a time yet. See
   [docs/real-codebase-trial](docs/real-codebase-trial/README.md).
 
 ## Getting started
@@ -203,7 +210,7 @@ Next:
 - Complete a targeted keyboard, visible-focus, screen-reader announcement,
   narrow-viewport, long-JSON, and slow/failing-operation audit.
 - Record the skill workflow and link it here.
-- Improve the skill using the web app trial: test one changed field at a time, and separate rejected values from tolerated ones.
+- Try the improved skill on a codebase and change it was not designed from.
 
 ## How this was built
 
