@@ -134,6 +134,7 @@ html { scroll-padding-top: 4.65rem; }
 .intro-kicker span { margin-inline: 0.22rem; opacity: 0.65; }
 h1 { font-size: clamp(2rem, 4.45vw, 4.05rem); line-height: 0.99; letter-spacing: -0.058em; font-weight: 740; }
 .intro-description { color: var(--muted); margin-top: 0.85rem; max-width: 33rem; font-size: clamp(0.89rem, 1.3vw, 1.06rem); }
+.intro-description a { color: var(--accent); font-weight: 650; text-decoration: underline; text-underline-offset: 0.2em; }
 .intro-workflow { display: grid; justify-items: end; gap: 0.5rem; }
 .workflow-guide { display: flex; gap: clamp(0.7rem, 2.2vw, 1.5rem); }
 .workflow-guide li { display: grid; justify-items: center; gap: 0.45rem; color: #3f5073; font-size: 0.75rem; font-weight: 680; }
