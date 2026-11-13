@@ -316,7 +316,17 @@ export function Dashboard({
               Catch breaking<br className="intro-break" /> API changes.
             </h1>
             <p className="intro-description">
-              Compare live JSON against a saved baseline and see exactly what changed.
+              Compare live JSON against a saved baseline and see exactly what
+              changed. The same checker also runs as a{" "}
+              <a
+                href="https://github.com/phatpanda6/contractlens#investigate-an-api-change-in-claude-code"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Claude Code skill
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+              .
             </p>
           </div>
           <div className="intro-workflow">
@@ -366,7 +376,7 @@ export function Dashboard({
             <p className="sr-only" role="status" aria-atomic="true">
               {latestRun === null
                 ? "No recorded check yet."
-                : `Latest recorded check: ${resultTitle}. ${breakingChangeCount === null ? "" : `${breakingChangeCount} breaking changes and ${informationalChangeCount} informational changes.`} Target: ${latestRunTargetUrl ?? "not recorded"}.`}
+                : `Latest recorded check: ${resultTitle}. ${breakingChangeCount === null ? "" : `${breakingChangeCount} breaking ${breakingChangeCount === 1 ? "change" : "changes"} and ${informationalChangeCount} informational ${informationalChangeCount === 1 ? "change" : "changes"}.`} Target: ${latestRunTargetUrl ?? "not recorded"}.`}
             </p>
             <div className="result-header">
               <div className="result-main">
@@ -480,6 +490,7 @@ export function Dashboard({
                   <p>No schema changes detected.</p>
                 </div>
               ) : (
+                <>
                 <table className="diff-table">
                   <caption className="sr-only">
                     Field changes in the latest recorded check
@@ -533,6 +544,16 @@ export function Dashboard({
                     ))}
                   </tbody>
                 </table>
+                {/* "Breaking" is a rule about the response shape, not proof
+                    that a particular frontend fails. Say so next to the label. */}
+                {breakingChangeCount !== null && breakingChangeCount > 0 && (
+                  <p className="evidence-note">
+                    Breaking means the response shape changed in a way that
+                    can break code that reads it. It does not prove that your
+                    frontend fails.
+                  </p>
+                )}
+                </>
               )}
             </section>
 
@@ -726,8 +747,8 @@ export function Dashboard({
             Deterministic checks. Explainable results.
           </span>
           <p>
-            PASS means no breaking changes detected within the supported schema
-            model. Arrays use the first item.
+            PASS means no breaking changes were detected in the shape of the
+            response. For arrays, only the first item is checked.
           </p>
         </footer>
       </main>
