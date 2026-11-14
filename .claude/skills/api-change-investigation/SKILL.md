@@ -1,6 +1,6 @@
 ---
 name: api-change-investigation
-description: Investigate how an API response change affects consuming code. Compares a baseline and a latest saved JSON response with the ContractLens compare command, searches the given consumer folder for code that reads each changed field, and, when given a test command, runs the test against each changed field on its own. Reports each field as confirmed broken, test still passes, may be affected, no usage found, or observed change only. Use when asked whether an API response change breaks a frontend or other consumer.
+description: Investigate how an API response change affects consuming code. Compares a baseline and a latest saved JSON response with the ContractLens compare command, searches the given consumer folder for code that reads each changed field, and, when given a test command, runs the test against each changed field on its own. Reports each field as confirmed broken, used but test passes, may be affected, no usage found, or observed change only. Use when asked whether an API response change breaks a frontend or other consumer.
 ---
 
 # API change investigation
@@ -41,9 +41,10 @@ Demo inputs in this repository:
 - Never change a baseline.
 - Never describe a removed field and a new field as a rename. Report them as
   two separate changes.
-- Show the compare command's `breaking` or `info` verdict exactly as given.
-- Never write "confirmed broken" or "test still passes" without a test run
-  from this investigation to show for it.
+- Never change the compare command's verdict. In the report's "Could break
+  code?" column, show `breaking` as Yes and `info` as No.
+- Never write "confirmed broken" or "used, but test passes" without a test
+  run from this investigation to show for it.
 - Search only the consumer folder.
 - Give each changed field exactly one label.
 
@@ -102,13 +103,14 @@ Use the first label that applies:
 | Label | When it applies |
 |---|---|
 | **Confirmed broken** | The test passed on the baseline and failed on the file with only this field changed. |
-| **Test still passes** | Code in the consumer folder reads the field, and the test passed on the file with only this field changed. |
+| **Used, but test passes** | Code in the consumer folder reads the field, and the test passed on the file with only this field changed. |
 | **May be affected** | `breaking`, code in the consumer folder reads the field, and there is no test result for this field alone (no test command, the baseline run failed, or the change could not be isolated). |
 | **No usage found** | `breaking`, and no code in the consumer folder reads the field. |
 | **Observed change only** | The severity is `info`. |
 
-- "Test still passes" means only that this one test passed. It is not proof
-  the change is safe; say what the test checks if that is clear from the test.
+- "Used, but test passes" means only that this one test passed. It is not
+  proof the change is safe; say what the test checks if that is clear from
+  the test.
 - If the latest file failed but no single change failed on its own, say that
   the failure only appears when changes are combined.
 - A test run on the full latest file stops at its first failure, so use the
@@ -116,27 +118,35 @@ Use the first label that applies:
 
 ### 5. Report
 
-Use this layout:
+Write for someone who has not seen this skill before. Use plain sentences and
+this layout:
 
 ```
 ## API change investigation
 
-Baseline: <path>
-Latest: <path>
-Consumer folder: <path>
-Compare command: <N> breaking, <N> info
+<One or two plain sentences: how many fields changed, which ones broke the
+test on their own, and anything the test could not tell us.>
 
-| Field | Change | Schema verdict | Finding | Evidence |
+Old response: <baseline path>
+New response: <latest path>
+Code searched: <consumer folder>
+
+| Field | Change | Could break code? | Finding | Evidence |
 |---|---|---|---|---|
-| `price` | number -> string | breaking | Confirmed broken | fails on its own: <error> at <file:line> |
+| `price` | number -> string | Yes | Confirmed broken | fails on its own: <error> at <file:line> |
+| `title` | removed | Yes | Used, but test passes | read at <file:line>; <what the test checks> |
+| `name` | added | No | Observed change only | none needed |
 
-### Test evidence
-Command: <the test command as given>
-Baseline: passed
-Latest (all changes): failed, <error>
-Per field:
-- `price`: failed, <error> at <file:line>
-- `title`: passed
+"Could break code?" is the checker's rule about the response shape (Yes =
+breaking, No = informational). "Finding" is what was found in this code.
+
+### What the test showed
+- Old response: passed
+- New response (all changes together): failed, <error>
+- Only `price` changed: failed, <error> at <file:line>
+- Only `title` changed: passed
+
+To re-run: <the test command as given>, replacing {response} with a file path.
 
 ### Not checked
 - <what this run did not cover>
@@ -145,12 +155,16 @@ Per field:
 - In "Change", write the compare command's finding: `removed`, `added`, or
   `<from> -> <to>`.
 - Evidence for "confirmed broken" is the error from that field's own run.
-  Evidence for "test still passes" and "may be affected" includes the
+  Evidence for "used, but test passes" and "may be affected" includes the
   `file:line` of each read. Evidence for "no usage found" is the folder that
   was searched, plus that field's test result if there is one.
-- If no test command was given, replace the test section with one line saying
-  no test was run, so nothing can be confirmed broken or shown to pass.
+- Under "What the test showed", list one line for every changed field that
+  was tested on its own. For a change that could not be isolated, say so and
+  give the reason.
+- If no test command was given, replace that section with one line saying no
+  test was run, so nothing can be confirmed broken or shown to pass.
 - Under "Not checked", always say that only the consumer folder was searched,
   that the result is based on saved response files, and that a passing test
   proves only what that test checks. Add anything else that applies.
+- Do not print temporary folder or file paths in the report.
 - Do not suggest fixes unless asked.

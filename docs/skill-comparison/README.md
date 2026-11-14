@@ -100,6 +100,12 @@ still passes", was added. Three fresh runs with the improved skill on this
 example, same model (`claude-opus-5-5`), same prompt. Saved answers:
 [`runs-improved/`](runs-improved/).
 
+The label "Test still passes" was later renamed "Used, but test passes" and
+the report wording was simplified. The results and saved runs here use the
+old name. One fresh run after the rewording (`claude-opus-5-5`) gave the same
+finding for all four fields: [`runs-reworded/`](runs-reworded/). One run
+checks that the rewording changed nothing; it is not a new measurement.
+
 | Field | Skill before (3 runs) | Skill after (3 runs) |
 |---|---|---|
 | `price` | Confirmed broken | Confirmed broken, failing on its own |

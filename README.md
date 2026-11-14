@@ -28,22 +28,22 @@ Use the api-change-investigation skill. Baseline: examples/products-consumer/fix
 
 The report for that example:
 
-| Field | Change | Schema verdict | Finding | Evidence |
+| Field | Change | Could break code? | Finding | Evidence |
 | --- | --- | --- | --- | --- |
-| `price` | number -> string | breaking | Confirmed broken | the test fails with only this field changed: `product.price.toFixed is not a function` at `format-product.ts:12` |
-| `title` | removed | breaking | Test still passes | read at `format-product.ts:12`; the test passes with only this change, but it checks only the price |
-| `inStock` | boolean -> string | breaking | No usage found | no reads in `examples/products-consumer`; the test passes with only this change |
-| `name` | added | info | Observed change only | none needed |
+| `price` | number -> string | Yes | Confirmed broken | the test fails with only this field changed: `product.price.toFixed is not a function` at `format-product.ts:12` |
+| `title` | removed | Yes | Used, but test passes | read at `format-product.ts:12`; the test passes with only this change, but it checks only the price |
+| `inStock` | boolean -> string | Yes | No usage found | no reads in `examples/products-consumer`; the test passes with only this change |
+| `name` | added | No | Observed change only | none needed |
 
-The checker calls three of these changes breaking. Only one is proven to break this consumer. Each changed field gets exactly one label:
+"Could break code?" is the checker's rule about the response shape: Yes means breaking, No means informational. The checker calls three of these changes breaking. Only one is proven to break this consumer. Each changed field gets exactly one label:
 
 - **Confirmed broken:** a test passes with the old response and fails when only this field is changed. The test output is quoted.
-- **Test still passes:** code reads the field, and the test passes when only this field is changed. This proves only what that test checks.
+- **Used, but test passes:** code reads the field, and the test passes when only this field is changed. This proves only what that test checks.
 - **May be affected:** code reads the field, with file and line, but there is no test result for it.
 - **No usage found:** the change is breaking by the schema rule, but no code in the folder reads the field.
 - **Observed change only:** an informational change, such as a new field.
 
-The skill is read-only. It never edits files in the repository, writes a test, changes a baseline, treats a removed field and a new field as a rename, or reports a test result it did not run. Without a test command it never says "confirmed broken" or "test still passes".
+The skill is read-only. It never edits files in the repository, writes a test, changes a baseline, treats a removed field and a new field as a rename, or reports a test result it did not run. Without a test command it never says "confirmed broken" or "used, but test passes".
 
 To test one field at a time, the skill uses `npm run isolate`, which writes one response file per change: the old response with only that change applied. A test that stops at its first failure can then still show a second break behind it.
 
@@ -170,7 +170,7 @@ Deterministic code decides what changed and whether a change is breaking. AI nev
   and on this project's own web app. It searches only the folder it is given,
   and it can confirm a break only when it is given a test command.
 - The skill's per-field results are only as good as the test it is given.
-  "Test still passes" means that one test passed, not that the change is safe.
+  "Used, but test passes" means that one test passed, not that the change is safe.
 - The per-field step was designed from the web app trial and re-measured on
   that same trial, not on new code. Changes inside arrays cannot be tested
   one at a time yet. See

@@ -148,6 +148,12 @@ with only that change applied), and the skill runs the test against each
 file. A fifth label, "Test still passes", was added, and the "error must name
 the field" rule was removed.
 
+The label "Test still passes" was later renamed "Used, but test passes" and
+the report wording was simplified. The results and saved runs here use the
+old name. One fresh run after the rewording (`claude-fable-5-2`) gave the same
+finding for all five fields: [`runs-reworded/`](runs-reworded/). One run
+checks that the rewording changed nothing; it is not a new measurement.
+
 The bar was set before the runs: in 3 of 3 fresh runs, match the answer key
 on all five fields, and back every "broken" and "test still passes" verdict
 with a test run on that field alone.
