@@ -183,9 +183,10 @@ Deterministic code decides what changed and whether a change is breaking. AI nev
   the public hosted demo does not offer the Explain action.
 - The compare command reads saved JSON files. It does not fetch URLs.
 - The investigation skill has been run only on the included example consumer,
-  on this project's own web app, and once in a small separate project outside
-  this repository ([docs/install-check](docs/install-check/README.md)). Nobody
-  else has installed it yet. It searches only the folder it is given, and it
+  on this project's own web app, and in a small separate project outside
+  this repository, including once after installing it from GitHub
+  ([docs/install-check](docs/install-check/README.md)). Nobody else has
+  installed it yet. It searches only the folder it is given, and it
   can confirm a break only when it is given a test command.
 - The skill's per-field results are only as good as the test it is given.
   "Used, but test passes" means that one test passed, not that the change is safe.

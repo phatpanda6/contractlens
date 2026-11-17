@@ -35,12 +35,22 @@ Edit tools were not allowed.
   own test failure. `currency` was reported as an observed change only.
 - No file in the project changed.
 
+## Installed from GitHub
+
+After this was merged, the plugin was installed on the author's machine with
+the two commands in the main README (`claude plugin marketplace add
+phatpanda6/contractlens`, then `claude plugin install
+contractlens@contractlens`). One more fresh session in the same separate
+project, this time with no `--plugin-dir`, ran the bundled checker from the
+installed copy and gave the same three findings. No file in the project
+changed.
+
 ## What this does not show
 
-- The plugin was loaded from a local folder. Installing it from GitHub with
-  `claude plugin install` was not part of this check.
 - It is one run on a made-up project written for this check. It is not a
-  measurement, and nobody else has installed the skill yet.
+  measurement.
+- The install was done by the author, on one machine (macOS). Nobody else
+  has installed the skill yet.
 
 ## The run
 
