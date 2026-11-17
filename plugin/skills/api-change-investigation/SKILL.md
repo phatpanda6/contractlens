@@ -1,6 +1,6 @@
 ---
 name: api-change-investigation
-description: Investigate how an API response change affects consuming code. Compares a baseline and a latest saved JSON response with the ContractLens compare command, searches the given consumer folder for code that reads each changed field, and, when given a test command, runs the test against each changed field on its own. Reports each field as confirmed broken, used but test passes, may be affected, no usage found, or observed change only. Use when asked whether an API response change breaks a frontend or other consumer.
+description: Investigate how an API response change affects consuming code. Compares a baseline and a latest saved JSON response with the bundled ContractLens checker, searches the given consumer folder for code that reads each changed field, and, when given a test command, runs the test against each changed field on its own. Reports each field as confirmed broken, used but test passes, may be affected, no usage found, or observed change only. Use when asked whether an API response change breaks a frontend or other consumer.
 ---
 
 # API change investigation
@@ -25,7 +25,7 @@ monitoring.
 If 1, 2 or 3 is missing, ask for it. Do not guess paths and do not go looking
 for a test command.
 
-Demo inputs in this repository:
+Demo inputs (these files are in the ContractLens repository):
 
 - Baseline: `examples/products-consumer/fixtures/product-v1.json`
 - Latest: `examples/products-consumer/fixtures/product-v2.json`
@@ -50,12 +50,14 @@ Demo inputs in this repository:
 
 ## Steps
 
-Run all commands from the repository root.
+Run all commands from the root of the project being investigated. The
+checker is one JavaScript file bundled with this skill. It needs only Node
+and works in any project.
 
 ### 1. Compare the responses
 
 ```bash
-npm run --silent compare -- <baseline> <latest> --json
+node "${CLAUDE_SKILL_DIR}/scripts/contractlens.mjs" compare <baseline> <latest> --json
 ```
 
 - Exit code 2: the input is invalid. Show the error message and stop.
@@ -87,7 +89,7 @@ A run passes when its exit code is 0. To run the test against a file, replace
    applied:
 
    ```bash
-   npm run --silent isolate -- <baseline> <latest> --out "$(mktemp -d)"
+   node "${CLAUDE_SKILL_DIR}/scripts/contractlens.mjs" isolate <baseline> <latest> --out "$(mktemp -d)"
    ```
 
    The output lists each change with its `file`. A change with `file: null`

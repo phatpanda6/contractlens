@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "db:seed": "tsx prisma/seed.ts",
     "compare": "tsx scripts/compare.ts",
-    "isolate": "tsx scripts/isolate.ts"
+    "isolate": "tsx scripts/isolate.ts",
+    "build:skill": "tsx scripts/build-skill.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -32,6 +33,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.28.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
     "tailwindcss": "^4",
