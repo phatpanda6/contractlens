@@ -13,7 +13,23 @@ A web app shows the same checker with saved history.
 
 ## Investigate an API change in Claude Code
 
-The skill lives in `.claude/skills/api-change-investigation/`. Open this repository in Claude Code and give it:
+### Install it in your own project
+
+The skill is a Claude Code plugin. Its checker is one JavaScript file bundled inside the skill, so the only requirement is Node. Run these once:
+
+```bash
+claude plugin marketplace add phatpanda6/contractlens
+```
+
+```bash
+claude plugin install contractlens@contractlens
+```
+
+Then open your own project in Claude Code and ask it to use the api-change-investigation skill.
+
+### What to give it
+
+The skill lives in `plugin/skills/api-change-investigation/`. It also loads when you open this repository in Claude Code. Give it:
 
 1. the old response file (the baseline);
 2. the new response file;
@@ -45,7 +61,7 @@ The report for that example:
 
 The skill is read-only. It never edits files in the repository, writes a test, changes a baseline, treats a removed field and a new field as a rename, or reports a test result it did not run. Without a test command it never says "confirmed broken" or "used, but test passes".
 
-To test one field at a time, the skill uses `npm run isolate`, which writes one response file per change: the old response with only that change applied. A test that stops at its first failure can then still show a second break behind it.
+To test one field at a time, the skill uses its bundled checker (the same code as `npm run isolate`), which writes one response file per change: the old response with only that change applied. A test that stops at its first failure can then still show a second break behind it.
 
 This example uses saved response files. It is not live monitoring. The skill has been run on this example and on one real codebase, described below.
 
@@ -166,9 +182,11 @@ Deterministic code decides what changed and whether a change is breaking. AI nev
 - Live AI explanations require local development and a configured Gateway key;
   the public hosted demo does not offer the Explain action.
 - The compare command reads saved JSON files. It does not fetch URLs.
-- The investigation skill has been run only on the included example consumer
-  and on this project's own web app. It searches only the folder it is given,
-  and it can confirm a break only when it is given a test command.
+- The investigation skill has been run only on the included example consumer,
+  on this project's own web app, and once in a small separate project outside
+  this repository ([docs/install-check](docs/install-check/README.md)). Nobody
+  else has installed it yet. It searches only the folder it is given, and it
+  can confirm a break only when it is given a test command.
 - The skill's per-field results are only as good as the test it is given.
   "Used, but test passes" means that one test passed, not that the change is safe.
 - The per-field step was designed from the web app trial and re-measured on

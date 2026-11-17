@@ -51,7 +51,8 @@ make_copy() {
     find "$dest/docs" -type d -name runs -prune -exec rm -rf {} +
   fi
   if [ "$side" = "without" ]; then
-    rm -rf "$dest/.claude"
+    # The skill lives in plugin/ and is linked from .claude/skills.
+    rm -rf "$dest/.claude" "$dest/plugin" "$dest/.claude-plugin"
   fi
 }
 
@@ -75,7 +76,10 @@ run_one() {
     < /dev/null > "$OUT/$name.jsonl" 2> "$OUT/$name.stderr") || echo "  $name exited with an error"
 
   # Lists any file the session changed, added or removed.
-  diff -rq "$pristine" "$copy" --exclude=node_modules > "$OUT/$name.changes" || true
+  # .claude/skills links to plugin/skills, so diff sees that folder twice and
+  # warns about a loop. The folder is still compared once; drop the warning.
+  diff -rq "$pristine" "$copy" --exclude=node_modules > "$OUT/$name.changes" \
+    2> >(grep -v "Directory loop detected" >&2) || true
   rm -rf "$pristine"
 }
 

@@ -1,0 +1,9 @@
+{
+  "name": "contractlens",
+  "description": "Investigate how an API response change affects the code that uses it. Labels each changed field with evidence, testing each change on its own.",
+  "version": "0.1.0",
+  "author": {
+    "name": "phatpanda6"
+  },
+  "repository": "https://github.com/phatpanda6/contractlens"
+}
