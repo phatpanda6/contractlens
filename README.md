@@ -100,6 +100,8 @@ The skill was then changed to test each changed field on its own. Re-run on the 
 
 Both are small samples, three runs per side, and neither is evidence about the skill in general. The methods, prompts, results and limits are in [docs/skill-comparison](docs/skill-comparison/README.md) and [docs/real-codebase-trial](docs/real-codebase-trial/README.md).
 
+A founder suggested a different moat: an automatic check that prevents breaks and makes Claude more token efficient. That was tested too, with a hook that checks types and tests after every edit and before Claude finishes, on three refactoring tasks, nine runs per side. Claude was correct in every run either way, but the hook used about 6% more tokens, against a bar of 20% fewer set beforehand. Plain Claude already searched for every use before editing, and 97% of billed tokens in this project's own sessions came from re-reading the conversation, so a check that adds turns costs more. Details: [docs/health-check-experiment](docs/health-check-experiment/README.md).
+
 ## Live Demo
 
 [Open the deployed ContractLens demo](https://contractlens-iota.vercel.app/)
@@ -245,3 +247,4 @@ Next:
 - [docs/development.md](docs/development.md): full local setup and tech stack
 - [docs/skill-comparison](docs/skill-comparison/README.md): the skill compared with plain Claude on the example
 - [docs/real-codebase-trial](docs/real-codebase-trial/README.md): the same comparison on this project's web app
+- [docs/health-check-experiment](docs/health-check-experiment/README.md): whether an automatic check makes Claude more token efficient
