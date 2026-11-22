@@ -1,15 +1,65 @@
 # ContractLens
 
-ContractLens helps you find out whether an API response change breaks the code that uses it.
+[![CI](https://github.com/phatpanda6/contractlens/actions/workflows/ci.yml/badge.svg)](https://github.com/phatpanda6/contractlens/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/demo-live-brightgreen)](https://contractlens-iota.vercel.app/)
 
-It has two parts:
+**Catch breaking API changes before your users do.**
 
-- A tested, deterministic checker that compares two JSON responses and reports what changed and whether each change is breaking.
-- A Claude Code skill that runs the checker, searches the code that uses the response, and reports what is proven to break and what only might.
+ContractLens tells you whether an API response change breaks the code that uses it — and proves it, instead of guessing.
 
-A web app shows the same checker with saved history.
+A backend can remove a field or turn a number into a string without warning. That can silently break rendering, sorting, formatting, or calculations in the frontend that consumes it. ContractLens compares a saved baseline response with the latest response, reports exactly what changed, and checks whether that change actually breaks your code.
 
-> Deterministic code detects the change. AI investigates possible impact and shows its evidence.
+> **Try it in 2 minutes:** [Open the live demo](https://contractlens-iota.vercel.app/) — choose **Original response v1**, click **Run check** for a Pass, then choose **Changed response v2** and click **Run check** for a Fail with 3 changes found.
+
+![ContractLens demo — v1 passes, v2 fails with 3 changes found](docs/images/demo.png)
+
+## What it does
+
+ContractLens has three parts that share one deterministic checker:
+
+- **A deterministic checker** — pure TypeScript that compares two JSON responses and reports missing fields, new fields, and type changes, with exit codes `0` (no breaking changes), `1` (breaking changes), and `2` (invalid input). No web app, database, or model key needed:
+  ```bash
+  npm run compare -- examples/products-consumer/fixtures/product-v1.json examples/products-consumer/fixtures/product-v2.json
+  ```
+- **A Claude Code skill** — `api-change-investigation` runs the checker, searches the code that uses the response, and, when given a test command, runs the test against each changed field on its own. Each field gets exactly one evidence-backed label: Confirmed broken, Used but test passes, May be affected, No usage found, or Observed change only.
+- **A web app** — the same checker with a saved baseline, run history, and explicit baseline acceptance, backed by Next.js and PostgreSQL. The [live demo](https://contractlens-iota.vercel.app/) runs it against two built-in demo routes.
+
+> Deterministic code decides pass or fail. AI never decides pass or fail — it investigates possible impact and shows its evidence.
+
+## A concrete example
+
+The included example changes a product response from v1 to v2. The checker finds 3 breaking changes and 1 informational change. The skill then proves which one actually breaks the consumer:
+
+| Field | Change | Finding | Evidence |
+| --- | --- | --- | --- |
+| `price` | number -> string | Confirmed broken | Test fails with only this field changed: `product.price.toFixed is not a function` at `format-product.ts:12` |
+| `title` | removed | Used, but test passes | Read at `format-product.ts:12`; the test passes with only this change, but it checks only the price |
+| `inStock` | boolean -> string | No usage found | No reads in `examples/products-consumer` |
+| `name` | added | Observed change only | None needed — informational only |
+
+## Evidence, not hype
+
+This project was built to be checked, not just claimed:
+
+- The skill was compared with plain Claude Code on the same example, three runs each, and then on this project's own web app. The skill's value was not a different answer — it was separating proven breaks from possible ones, with a test run behind each verdict. After per-field isolation was added, it matched the answer key in 3 of 3 runs.
+- A separate experiment tested whether an automatic check could make Claude more token-efficient. It didn't: the hook used about 6% *more* tokens, against a target of 20% fewer. That result is published in full, with raw logs, in [docs/health-check-experiment](docs/health-check-experiment/README.md).
+- Methods, prompts, results, and limits for both comparisons are in [docs/skill-comparison](docs/skill-comparison/README.md) and [docs/real-codebase-trial](docs/real-codebase-trial/README.md). Samples are small (three runs per side), and the README says so.
+
+## Tech stack
+
+Next.js 16 · React 19 · TypeScript · Prisma / PostgreSQL · Vitest · Playwright · Vercel AI Gateway
+
+Tested with Vitest unit and route tests and Playwright end-to-end tests (v1 Pass → v2 Fail → accept as baseline → v2 Pass), all run in GitHub Actions on every push and pull request.
+
+## Quick start
+
+```bash
+npm install
+npm run compare -- examples/products-consumer/fixtures/product-v1.json examples/products-consumer/fixtures/product-v2.json
+npm test
+```
+
+The web app also needs PostgreSQL — see [docs/development.md](docs/development.md) for database setup, migrations, and browser tests. To try the skill in your own project, see [Investigate an API change in Claude Code](#investigate-an-api-change-in-claude-code) below.
 
 ## Investigate an API change in Claude Code
 
